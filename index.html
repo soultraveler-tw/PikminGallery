@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的皮克敏明信片數位圖庫</title>
+    <!-- 引入 Leaflet 的 CSS 與 JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f9f4; margin: 0; padding: 20px; color: #333; }
+        
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #2d5a2d; font-size: 2.5rem; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 1.1rem; }
+
+        /* 地圖容器 */
+        #map {
+            height: 400px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 3px solid #8bc34a;
+            z-index: 1; /* 避免遮擋其他浮動元素 */
+        }
+        
+        /* Leaflet 彈出視窗樣式調整 */
+        .leaflet-popup-content {
+            text-align: center;
+        }
+        .leaflet-popup-content img {
+            width: 100px;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            border: 2px solid #8bc34a;
+        }
+        .leaflet-popup-content h3 {
+            margin: 0 0 5px 0;
+            font-size: 1rem;
+            color: #2d5a2d;
+        }
+        .leaflet-popup-content .sender-tag {
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        /* 寄件人篩選按鈕 (優化版橫向捲動) */
+        .filter-wrapper {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+        }
+        .filter-container { 
+            display: flex; 
+            gap: 12px; 
+            overflow-x: auto;
+            padding: 10px 5px;
+            scroll-behavior: smooth;
+            /* 讓電腦版可以正常滾動 */
+            -ms-overflow-style: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #8bc34a #f4f9f4;
+        }
+        
+        /* 美化捲軸 */
+        .filter-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .filter-container::-webkit-scrollbar-track {
+            background: #f4f9f4;
+            border-radius: 4px;
+        }
+        .filter-container::-webkit-scrollbar-thumb {
+            background: #8bc34a;
+            border-radius: 4px;
+        }
+        .filter-container::-webkit-scrollbar-thumb:hover {
+            background: #689f38;
+        }
+        .filter-btn {
+            background-color: rgba(255, 255, 255, 0.8); 
+            border: 2px solid rgba(139, 195, 74, 0.5); 
+            color: #2d5a2d;
+            padding: 8px 20px; 
+            border-radius: 25px; 
+            cursor: pointer;
+            font-size: 1rem; 
+            font-weight: bold; 
+            white-space: nowrap; /* 不換行 */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            backdrop-filter: blur(5px);
+        }
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(139, 195, 74, 0.15);
+            background-color: #fff;
+            border-color: #8bc34a;
+        }
+        .filter-btn.active {
+            background: linear-gradient(135deg, #8bc34a, #689f38); 
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 6px 15px rgba(104, 159, 56, 0.4);
+            transform: translateY(-2px);
+        }
+        .filter-fade-left, .filter-fade-right {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 40px;
+            pointer-events: none;
+        }
+        .filter-fade-left { left: 0; background: linear-gradient(to right, #f4f9f4, transparent); }
+        .filter-fade-right { right: 0; background: linear-gradient(to left, #f4f9f4, transparent); }
+
+        /* 瀑布流圖庫排版 */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 單張明信片卡片 */
+        .card {
+            background: #fff; border-radius: 15px; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: auto; display: block; border-bottom: 3px solid #8bc34a; }
+        
+        .card-info { padding: 15px; }
+        .card-title { font-size: 1.2rem; font-weight: bold; margin: 0 0 10px 0; color: #2d5a2d; }
+        
+        /* 寄件人標籤 */
+        .sender-tag {
+            display: inline-block; background-color: #fff3e0; color: #e65100;
+            padding: 4px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: bold;
+        }
+        .sender-icon { margin-right: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🌱 皮克敏散步珍藏</h1>
+        <p>紀錄我們踏過的每一寸土地，與朋友寄來的遠方問候</p>
+    </div>
+
+    <!-- 加入地圖 -->
+    <div id="map"></div>
+
+    
+    <div class="filter-wrapper region-wrapper" style="margin-bottom: 10px;">
+        <div class="filter-fade-left"></div>
+        <div class="filter-fade-right"></div>
+        <div class="filter-container region-container">
+            <button class="filter-btn region-btn active" onclick="filterRegion('all')">🌍 全部地區</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('台北市')">🇹🇼 台北市</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('新北市')">🇹🇼 新北市</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('桃園市')">🇹🇼 桃園市</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('台中市')">🇹🇼 台中市</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('彰化縣')">🇹🇼 彰化縣</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('雲林縣')">🇹🇼 雲林縣</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('嘉義縣')">🇹🇼 嘉義縣</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('台南市')">🇹🇼 台南市</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('高雄市')">🇹🇼 高雄市</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('台東縣')">🇹🇼 台東縣</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('日本')">🇯🇵 日本</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('韓國')">🇰🇷 韓國</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('菲律賓')">🇵🇭 菲律賓</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('新加坡')">🇸🇬 新加坡</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('紐西蘭')">🇳🇿 紐西蘭</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('挪威')">🇳🇴 挪威</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('芬蘭')">🇫🇮 芬蘭</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('冰島')">🇮🇸 冰島</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('波蘭')">🇵🇱 波蘭</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('比利時')">🇧🇪 比利時</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('英國')">🇬🇧 英國</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('西班牙')">🇪🇸 西班牙</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('墨西哥')">🇲🇽 墨西哥</button>
+            <button class="filter-btn region-btn" onclick="filterRegion('其他')">❓ 其他</button>
+        </div>
+    </div>
+
+    <div class="filter-wrapper">
+        <div class="filter-fade-left"></div>
+        <div class="filter-fade-right"></div>
+        <div class="filter-container">
+        <button class="filter-btn active" onclick="filterSelection('all')">全部顯示</button>
+        <button class="filter-btn" onclick="filterSelection('猴莎蕾')">💌 猴莎蕾</button>
+        <button class="filter-btn" onclick="filterSelection('皮卡丘')">💌 皮卡丘</button>
+        <button class="filter-btn" onclick="filterSelection('RPON')">💌 RPON</button>
+        <button class="filter-btn" onclick="filterSelection('Alyssa')">💌 Alyssa</button>
+        <button class="filter-btn" onclick="filterSelection('梨')">💌 梨</button>
+        <button class="filter-btn" onclick="filterSelection('安伯')">💌 安伯</button>
+        <button class="filter-btn" onclick="filterSelection('黃色電勞贖')">💌 黃色電勞贖</button>
+        <button class="filter-btn" onclick="filterSelection('丁小豆')">💌 丁小豆</button>
+        <button class="filter-btn" onclick="filterSelection('珊珊珊迪')">💌 珊珊珊迪</button>
+        <button class="filter-btn" onclick="filterSelection('Ariel')">💌 Ariel</button>
+        <button class="filter-btn" onclick="filterSelection('Markblue')">💌 Markblue</button>
+        <button class="filter-btn" onclick="filterSelection('Elisa garden')">💌 Elisa garden</button>
+        <button class="filter-btn" onclick="filterSelection('G-DRAGON')">💌 G-DRAGON</button>
+        <button class="filter-btn" onclick="filterSelection('Jenny')">💌 Jenny</button>
+        <button class="filter-btn" onclick="filterSelection('Jessy')">💌 Jessy</button>
+        <button class="filter-btn" onclick="filterSelection('Kimi')">💌 Kimi</button>
+        <button class="filter-btn" onclick="filterSelection('Lanyu')">💌 Lanyu</button>
+        <button class="filter-btn" onclick="filterSelection('Onion')">💌 Onion</button>
+        <button class="filter-btn" onclick="filterSelection('Ritana')">💌 Ritana</button>
+        <button class="filter-btn" onclick="filterSelection('TING-示斤')">💌 TING-示斤</button>
+        <button class="filter-btn" onclick="filterSelection('Ying')">💌 Ying</button>
+        <button class="filter-btn" onclick="filterSelection('Yiru')">💌 Yiru</button>
+        <button class="filter-btn" onclick="filterSelection('Yiwenの柴日記')">💌 Yiwenの柴日記</button>
+        <button class="filter-btn" onclick="filterSelection('Yo')">💌 Yo</button>
+        <button class="filter-btn" onclick="filterSelection('book94aul')">💌 book94aul</button>
+        <button class="filter-btn" onclick="filterSelection('mullova')">💌 mullova</button>
+        <button class="filter-btn" onclick="filterSelection('ooo')">💌 ooo</button>
+        <button class="filter-btn" onclick="filterSelection('xuyyn')">💌 xuyyn</button>
+        <button class="filter-btn" onclick="filterSelection('ysn')">💌 ysn</button>
+        <button class="filter-btn" onclick="filterSelection('凱西妹紙')">💌 凱西妹紙</button>
+        <button class="filter-btn" onclick="filterSelection('咬到德頭(Ф_Ф)')">💌 咬到德頭(Ф_Ф)</button>
+        <button class="filter-btn" onclick="filterSelection('咬到舌頭(Φ_Φ)')">💌 咬到舌頭(Φ_Φ)</button>
+        <button class="filter-btn" onclick="filterSelection('夏夕夏景')">💌 夏夕夏景</button>
+        <button class="filter-btn" onclick="filterSelection('守雛友悠惠')">💌 守雛友悠惠</button>
+        <button class="filter-btn" onclick="filterSelection('尼羅河女兒')">💌 尼羅河女兒</button>
+        <button class="filter-btn" onclick="filterSelection('巧巧')">💌 巧巧</button>
+        <button class="filter-btn" onclick="filterSelection('我愛熊熊')">💌 我愛熊熊</button>
+        <button class="filter-btn" onclick="filterSelection('皮卡在巨大被人偷打*._.')">💌 皮卡在巨大被人偷打*._.</button>
+        <button class="filter-btn" onclick="filterSelection('阿呆呆')">💌 阿呆呆</button>
+        <button class="filter-btn" onclick="filterSelection('阿霍')">💌 阿霍</button>
+        <button class="filter-btn" onclick="filterSelection('靜靜走')">💌 靜靜走</button>
+        <button class="filter-btn" onclick="filterSelection('하리보')">💌 하리보</button>
+        </div>
+    </div>
+
+    <div class="gallery">
+        <div class="card item 皮卡丘" data-lat="25.0478" data-lng="121.5170" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.0263" data-lng="121.5434" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.0330" data-lng="121.5654" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.0347" data-lng="121.5218" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.0400" data-lng="121.5300" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item 梨" data-lat="33.4862" data-lng="129.8272" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
+            </div>
+        </div>
+        <div class="card item 安伯" data-lat="25.0450" data-lng="121.5500" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：安伯</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.0395" data-lng="121.5113" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.0420" data-lng="121.5400" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item Alyssa" data-lat="24.9926" data-lng="121.4641" data-region="新北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Alyssa</span>
+            </div>
+        </div>
+        <div class="card item 黃色電勞贖" data-lat="25.0410" data-lng="121.5350" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：黃色電勞贖</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.0500" data-lng="121.5500" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item 丁小豆" data-lat="25.0300" data-lng="121.5200" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
+            </div>
+        </div>
+        <div class="card item Alyssa" data-lat="25.0336" data-lng="121.5552" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Alyssa</span>
+            </div>
+        </div>
+        <div class="card item 丁小豆" data-lat="25.0400" data-lng="121.5600" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.0273" data-lng="121.5348" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item 珊珊珊迪" data-lat="25.0350" data-lng="121.5450" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：珊珊珊迪</span>
+            </div>
+        </div>
+        <div class="card item Ariel" data-lat="22.6253" data-lng="120.3601" data-region="高雄市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ariel</span>
+            </div>
+        </div>
+        <div class="card item 梨" data-lat="23.8340" data-lng="120.9320" data-region="彰化縣"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
+            </div>
+        </div>
+        <div class="card item Markblue" data-lat="25.0500" data-lng="121.5300" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="37.5738600" data-lng="126.9816700" data-region="韓國"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：하리보</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="61.2222" data-lng="10.4500" data-region="挪威"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Yo" data-lat="25.0796" data-lng="121.2342" data-region="桃園市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yo</span>
+            </div>
+        </div>
+        <div class="card item 安伯" data-lat="25.0450" data-lng="121.5300" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：安伯</span>
+            </div>
+        </div>
+        <div class="card item 梨" data-lat="37.5580" data-lng="139.8160" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
+            </div>
+        </div>
+        <div class="card item Lanyu" data-lat="23.7580" data-lng="120.6120" data-region="雲林縣"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Lanyu</span>
+            </div>
+        </div>
+        <div class="card item Markblue" data-lat="1.3500" data-lng="103.8700" data-region="新加坡"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
+            </div>
+        </div>
+        <div class="card item 靜靜走" data-lat="25.0150" data-lng="121.4600" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：靜靜走</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="41.2900" data-lng="141.1800" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item 梨" data-lat="25.1320" data-lng="121.5000" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
+            </div>
+        </div>
+        <div class="card item 梨" data-lat="25.0193" data-lng="121.4682" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
+            </div>
+        </div>
+        <div class="card item 阿霍" data-lat="25.0958" data-lng="121.4597" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿霍</span>
+            </div>
+        </div>
+        <div class="card item Yo" data-lat="25.0024" data-lng="121.5205" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yo</span>
+            </div>
+        </div>
+        <div class="card item TING示斤" data-lat="25.0455" data-lng="121.5471" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：TING-示斤</span>
+            </div>
+        </div>
+        <div class="card item 阿霍" data-lat="25.027" data-lng="121.5132" data-region="新北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿霍</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0547" data-lng="121.5346" data-region="台中市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0331" data-lng="121.5691" data-region="台中市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0324" data-lng="121.498" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Ariel" data-lat="25.025" data-lng="121.5754" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ariel</span>
+            </div>
+        </div>
+        <div class="card item GDRAGON" data-lat="25.0032" data-lng="121.4693" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：G-DRAGON</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0004" data-lng="121.4548" data-region="台南市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Markblue" data-lat="25.0804" data-lng="121.5259" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0636" data-lng="121.574" data-region="芬蘭"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0705" data-lng="121.4859" data-region="芬蘭"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 巧巧" data-lat="25.0649" data-lng="121.505" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：巧巧</span>
+            </div>
+        </div>
+        <div class="card item Yo" data-lat="25.0104" data-lng="121.5344" data-region="桃園市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yo</span>
+            </div>
+        </div>
+        <div class="card item Yiru" data-lat="25.0897" data-lng="121.4737" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiru</span>
+            </div>
+        </div>
+        <div class="card item 咬到舌頭" data-lat="25.0825" data-lng="121.463" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：咬到舌頭(Φ_Φ)</span>
+            </div>
+        </div>
+        <div class="card item 守雛友悠惠" data-lat="25.009" data-lng="121.4834" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：守雛友悠惠</span>
+            </div>
+        </div>
+        <div class="card item 皮卡在巨大被人偷打" data-lat="25.002" data-lng="121.4771" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡在巨大被人偷打*._.</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0717" data-lng="121.5603" data-region="挪威"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0314" data-lng="121.5161" data-region="菲律賓"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0705" data-lng="121.504" data-region="紐西蘭"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0518" data-lng="121.5669" data-region="冰島"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="25.0859" data-lng="121.5756" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.0076" data-lng="121.4694" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item Jenny" data-lat="25.0654" data-lng="121.5204" data-region="台東縣"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jenny</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0315" data-lng="121.4762" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item TING示斤" data-lat="25.0092" data-lng="121.4628" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：TING-示斤</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.071" data-lng="121.5108" data-region="西班牙"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0653" data-lng="121.5117" data-region="英國"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0351" data-lng="121.5266" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Ritana" data-lat="25.0389" data-lng="121.5023" data-region="新北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ritana</span>
+            </div>
+        </div>
+        <div class="card item ooo" data-lat="25.0071" data-lng="121.5574" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：ooo</span>
+            </div>
+        </div>
+        <div class="card item book94aul" data-lat="25.038" data-lng="121.5316" data-region="新北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：book94aul</span>
+            </div>
+        </div>
+        <div class="card item 皮卡在巨大被人偷打" data-lat="25.0413" data-lng="121.5165" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡在巨大被人偷打*._.</span>
+            </div>
+        </div>
+        <div class="card item xuyyn" data-lat="25.0517" data-lng="121.471" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：xuyyn</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.0757" data-lng="121.4713" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item mullova" data-lat="25.0198" data-lng="121.4915" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：mullova</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0402" data-lng="121.4641" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 咬到德頭" data-lat="25.0833" data-lng="121.5124" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：咬到德頭(Ф_Ф)</span>
+            </div>
+        </div>
+        <div class="card item Kimi" data-lat="25.0794" data-lng="121.5774" data-region="墨西哥"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Kimi</span>
+            </div>
+        </div>
+        <div class="card item Elisagarden" data-lat="25.042" data-lng="121.4531" data-region="西班牙"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Elisa garden</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0738" data-lng="121.4562" data-region="冰島"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 凱西妹紙" data-lat="25.0656" data-lng="121.5341" data-region="嘉義縣"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：凱西妹紙</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.0066" data-lng="121.5396" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item Ying" data-lat="25.0357" data-lng="121.4569" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ying</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.0289" data-lng="121.5535" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item Yiwen柴日記" data-lat="25.0436" data-lng="121.4908" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0308" data-lng="121.5208" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item ooo" data-lat="25.0711" data-lng="121.5517" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：ooo</span>
+            </div>
+        </div>
+        <div class="card item Ritana" data-lat="25.09" data-lng="121.5754" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ritana</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.0341" data-lng="121.5388" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item 丁小豆" data-lat="25.065" data-lng="121.5214" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0323" data-lng="121.4701" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.061" data-lng="121.5075" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.0737" data-lng="121.4582" data-region="高雄市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item GDRAGON" data-lat="25.0074" data-lng="121.5562" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：G-DRAGON</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.0422" data-lng="121.471" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item Yiwen柴日記" data-lat="25.0793" data-lng="121.5073" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.089" data-lng="121.4683" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item book94aul" data-lat="25.0249" data-lng="121.4878" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：book94aul</span>
+            </div>
+        </div>
+        <div class="card item Jenny" data-lat="25.049" data-lng="121.517" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jenny</span>
+            </div>
+        </div>
+        <div class="card item 阿呆呆" data-lat="25.0221" data-lng="121.5361" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿呆呆</span>
+            </div>
+        </div>
+        <div class="card item Onion" data-lat="25.083" data-lng="121.5534" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Onion</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0766" data-lng="121.562" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 丁小豆" data-lat="25.044" data-lng="121.5056" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.0683" data-lng="121.5254" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0058" data-lng="121.5662" data-region="波蘭"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="25.081" data-lng="121.5079" data-region="日本"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item 我愛熊熊" data-lat="25.0227" data-lng="121.4544" data-region="台北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：我愛熊熊</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.0597" data-lng="121.5001" data-region="比利時"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 凱西妹紙" data-lat="25.0228" data-lng="121.4608" data-region="冰島"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：凱西妹紙</span>
+            </div>
+        </div>
+        <div class="card item 尼羅河女兒" data-lat="25.0684" data-lng="121.5541" data-region="新北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：尼羅河女兒</span>
+            </div>
+        </div>
+        <div class="card item Markblue" data-lat="25.0264" data-lng="121.4866" data-region="新北市"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
+            </div>
+        </div>
+        <div class="card item ysn" data-lat="25.0464" data-lng="121.5439" data-region="其他"</h3>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：ysn</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var map = L.map('map').setView([25.0375, 121.5300], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var markers = [];
+        var featureGroup = L.featureGroup().addTo(map);
+        var cards = document.getElementsByClassName("item");
+        
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var lat = card.getAttribute("data-lat");
+            var lng = card.getAttribute("data-lng");
+            
+            var senderTextElement = card.querySelector(".sender-tag");
+            var senderClass = senderTextElement ? senderTextElement.innerText.replace("💌", "").replace("來自：", "").trim() : "";
+            
+            if (lat && lng) {
+                var title = card.querySelector(".card-title").innerText;
+                var imgSrc = card.querySelector("img").src;
+                var senderHtml = card.querySelector(".sender-tag").innerHTML;
+
+                var popupContent = `
+                    <div style="text-align: center;">
+                        <img src="${imgSrc}" alt="${title}" style="width: 100px; height: auto; border-radius: 8px; margin-bottom: 5px; border: 2px solid #8bc34a;">
+                        <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #2d5a2d;">${title}</h3>
+                        <div class="sender-tag" style="display: inline-block; background-color: #fff3e0; color: #e65100; padding: 4px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: bold;">${senderHtml}</div>
+                    </div>
+                `;
+
+                var marker = L.marker([lat, lng]).bindPopup(popupContent);
+                marker.senderClass = senderClass;
+                marker.cardElement = card;
+                
+                markers.push(marker);
+                featureGroup.addLayer(marker);
+
+                (function(m, c) {
+                    c.addEventListener('click', function() {
+                        map.flyTo(m.getLatLng(), 15);
+                        m.openPopup();
+                        document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+                    });
+                })(marker, card);
+            }
+        }
+
+        if (markers.length > 0) {
+            map.fitBounds(featureGroup.getBounds(), { padding: [30, 30] });
+        }
+
+        // 雙重篩選功能 (地區 + 寄件人)
+        window.currentRegion = "all";
+        window.currentSender = "all";
+
+        window.applyFilters = function() {
+            var x = document.getElementsByClassName("item");
+            
+            for (var i = 0; i < x.length; i++) {
+                var senderTextElement = x[i].querySelector(".sender-tag");
+                var senderName = senderTextElement ? senderTextElement.innerText.replace("💌", "").replace("來自：", "").trim() : "";
+                var region = x[i].getAttribute("data-region");
+                
+                var matchSender = (window.currentSender === "all" || senderName.indexOf(window.currentSender) > -1);
+                var matchRegion = (window.currentRegion === "all" || region === window.currentRegion);
+                
+                if (matchSender && matchRegion) {
+                    x[i].style.display = "block";
+                } else {
+                    x[i].style.display = "none";
+                }
+            }
+            
+            featureGroup.clearLayers();
+            for (var i = 0; i < markers.length; i++) {
+                var m = markers[i];
+                var region = m.cardElement.getAttribute("data-region");
+                var matchSender = (window.currentSender === "all" || m.senderClass.indexOf(window.currentSender) > -1);
+                var matchRegion = (window.currentRegion === "all" || region === window.currentRegion);
+                
+                if (matchSender && matchRegion) {
+                    featureGroup.addLayer(m);
+                }
+            }
+            
+            if (featureGroup.getLayers().length > 0) {
+                map.fitBounds(featureGroup.getBounds(), { padding: [30, 30] });
+            }
+            
+            var allBtns = document.getElementsByClassName("filter-btn");
+            for (var j = 0; j < allBtns.length; j++) {
+                allBtns[j].classList.remove("active");
+                var text = allBtns[j].innerText;
+                
+                if (allBtns[j].classList.contains("region-btn")) {
+                    if (window.currentRegion === "all" && text.includes("全部地區")) allBtns[j].classList.add("active");
+                    else if (window.currentRegion !== "all" && text.includes(window.currentRegion)) allBtns[j].classList.add("active");
+                } else {
+                    if (window.currentSender === "all" && text.includes("全部顯示")) allBtns[j].classList.add("active");
+                    else if (window.currentSender !== "all" && text.includes(window.currentSender)) allBtns[j].classList.add("active");
+                }
+            }
+        };
+
+        window.filterSelection = function(c) {
+            if (c === "") c = "all";
+            window.currentSender = c;
+            window.applyFilters();
+        };
+        
+        window.filterRegion = function(r) {
+            window.currentRegion = r;
+            window.applyFilters();
+        };
+    </script>
+</body>
+</html>

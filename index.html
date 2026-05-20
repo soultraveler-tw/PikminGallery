@@ -1,790 +1,1893 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的皮克敏明信片數位圖庫</title>
-    <!-- 引入 Leaflet 的 CSS 與 JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f4f9f4; margin: 0; padding: 20px; color: #333; }
-        
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { color: #2d5a2d; font-size: 2.5rem; margin-bottom: 10px; }
-        .header p { color: #666; font-size: 1.1rem; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌱 皮克敏散步珍藏</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root {
+    --green: #4caf50;
+    --green-d: #2e7d32;
+    --text: #1a2e1a;
+    --muted: #5a6e5a;
+    --bg: #f3f7f3;
+    --card: #fff;
+    --glass: rgba(255,255,255,0.75);
+    --border: rgba(255,255,255,0.5);
+    --r-card: 16px;
+    --r-pill: 100px;
+    --s1: 0 2px 8px rgba(0,0,0,0.06);
+    --s2: 0 8px 24px rgba(0,0,0,0.10);
+    --s3: 0 20px 48px rgba(0,0,0,0.15);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body {
+    font-family:'Inter','Noto Sans TC',sans-serif;
+    background:var(--bg);
+    background-image:
+        radial-gradient(ellipse at 0% 0%, hsla(120,35%,88%,.9) 0,transparent 50%),
+        radial-gradient(ellipse at 100% 0%, hsla(48,55%,88%,.9) 0,transparent 50%);
+    background-attachment:fixed;
+    color:var(--text);
+    min-height:100vh;
+}
+.wrap { max-width:1400px; margin:0 auto; padding:36px 24px 80px; }
 
-        /* 地圖容器 */
-        #map {
-            height: 400px;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto 30px auto;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border: 3px solid #8bc34a;
-            z-index: 1; /* 避免遮擋其他浮動元素 */
-        }
-        
-        /* Leaflet 彈出視窗樣式調整 */
-        .leaflet-popup-content {
-            text-align: center;
-        }
-        .leaflet-popup-content img {
-            width: 100px;
-            height: auto;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            border: 2px solid #8bc34a;
-        }
-        .leaflet-popup-content h3 {
-            margin: 0 0 5px 0;
-            font-size: 1rem;
-            color: #2d5a2d;
-        }
-        .leaflet-popup-content .sender-tag {
-            font-size: 0.8rem;
-            margin: 0;
-        }
+/* Header */
+.header { text-align:center; margin-bottom:28px; animation:fadeDown .7s; }
+.header h1 { font-size:2.5rem; font-weight:900; color:var(--green-d); letter-spacing:-.5px; margin-bottom:6px; }
+.header p { color:var(--muted); font-size:1rem; font-weight:500; }
 
-        /* 寄件人篩選按鈕 (優化版橫向捲動) */
-        .filter-wrapper {
-            position: relative;
-            max-width: 1200px;
-            margin: 0 auto 30px auto;
-        }
-        .filter-container { 
-            display: flex; 
-            gap: 12px; 
-            overflow-x: auto;
-            padding: 10px 5px;
-            scroll-behavior: smooth;
-            /* 讓電腦版可以正常滾動 */
-            -ms-overflow-style: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #8bc34a #f4f9f4;
-        }
-        
-        /* 美化捲軸 */
-        .filter-container::-webkit-scrollbar {
-            height: 8px;
-        }
-        .filter-container::-webkit-scrollbar-track {
-            background: #f4f9f4;
-            border-radius: 4px;
-        }
-        .filter-container::-webkit-scrollbar-thumb {
-            background: #8bc34a;
-            border-radius: 4px;
-        }
-        .filter-container::-webkit-scrollbar-thumb:hover {
-            background: #689f38;
-        }
-        .filter-btn {
-            background-color: rgba(255, 255, 255, 0.8); 
-            border: 2px solid rgba(139, 195, 74, 0.5); 
-            color: #2d5a2d;
-            padding: 8px 20px; 
-            border-radius: 25px; 
-            cursor: pointer;
-            font-size: 1rem; 
-            font-weight: bold; 
-            white-space: nowrap; /* 不換行 */
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            backdrop-filter: blur(5px);
-        }
-        .filter-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(139, 195, 74, 0.15);
-            background-color: #fff;
-            border-color: #8bc34a;
-        }
-        .filter-btn.active {
-            background: linear-gradient(135deg, #8bc34a, #689f38); 
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 6px 15px rgba(104, 159, 56, 0.4);
-            transform: translateY(-2px);
-        }
-        .filter-fade-left, .filter-fade-right {
-            position: absolute;
-            top: 0; bottom: 0;
-            width: 40px;
-            pointer-events: none;
-        }
-        .filter-fade-left { left: 0; background: linear-gradient(to right, #f4f9f4, transparent); }
-        .filter-fade-right { right: 0; background: linear-gradient(to left, #f4f9f4, transparent); }
+/* Map */
+#map { width:100%; height:360px; border-radius:20px; box-shadow:var(--s2); border:5px solid rgba(255,255,255,.95); margin-bottom:18px; }
 
-        /* 瀑布流圖庫排版 */
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+/* ── Filter accordions ── */
+.filters { display:flex; flex-direction:column; gap:8px; margin-bottom:24px; }
 
-        /* 單張明信片卡片 */
-        .card {
-            background: #fff; border-radius: 15px; overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
-            position: relative;
-            cursor: pointer;
-        }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
-        .card img { width: 100%; height: auto; display: block; border-bottom: 3px solid #8bc34a; }
-        
-        .card-info { padding: 15px; }
-        .card-title { font-size: 1.2rem; font-weight: bold; margin: 0 0 10px 0; color: #2d5a2d; }
-        
-        /* 寄件人標籤 */
-        .sender-tag {
-            display: inline-block; background-color: #fff3e0; color: #e65100;
-            padding: 4px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: bold;
-        }
-        .sender-icon { margin-right: 5px; }
+.accordion {
+    background:var(--glass);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    border:1.5px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--s1);
+    overflow:hidden;
+    transition:box-shadow .2s;
+}
+.accordion:hover { box-shadow:var(--s2); }
 
-    </style>
+.acc-header {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 16px; cursor:pointer; user-select:none;
+    transition:background .18s;
+}
+.acc-header:hover { background:rgba(255,255,255,.35); }
+
+.acc-label {
+    font-size:.75rem; font-weight:800; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.07em; white-space:nowrap;
+}
+.acc-preview {
+    flex:1; font-size:.85rem; font-weight:600; color:var(--green-d);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.acc-chevron {
+    font-size:.75rem; color:var(--muted);
+    transition:transform .25s cubic-bezier(.4,0,.2,1);
+}
+.accordion.open .acc-chevron { transform:rotate(180deg); }
+
+.acc-body {
+    display:none; flex-wrap:wrap; gap:7px;
+    padding:6px 14px 14px;
+    border-top:1px solid rgba(0,0,0,0.05);
+    animation:fadeIn .2s;
+}
+.accordion.open .acc-body { display:flex; }
+
+/* Buttons */
+.filter-btn {
+    background:rgba(255,255,255,.85);
+    color:var(--muted);
+    border:1px solid rgba(0,0,0,.08);
+    padding:6px 14px;
+    border-radius:var(--r-pill);
+    cursor:pointer;
+    font-weight:600; font-size:.82rem;
+    white-space:nowrap;
+    transition:all .2s cubic-bezier(.4,0,.2,1);
+    font-family:inherit; line-height:1.5;
+}
+.filter-btn:hover {
+    background:#fff; color:var(--green-d);
+    border-color:#b6d4b6;
+    transform:translateY(-1px);
+    box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+.filter-btn.active {
+    background:linear-gradient(135deg,var(--green),var(--green-d));
+    color:#fff; border:none;
+    box-shadow:0 3px 12px rgba(76,175,80,.38);
+}
+.sender-count {
+    background:rgba(0,0,0,.07); padding:1px 6px;
+    border-radius:10px; font-size:.71rem; margin-left:4px;
+}
+.filter-btn.active .sender-count { background:rgba(255,255,255,.22); }
+
+/* Gallery */
+.gallery { column-count:4; column-gap:18px; }
+@media(max-width:1300px){ .gallery{ column-count:3; } }
+@media(max-width:900px){  .gallery{ column-count:2; } }
+@media(max-width:550px){  .gallery{ column-count:1; } }
+
+.card {
+    break-inside:avoid; -webkit-column-break-inside:avoid;
+    display:inline-block; width:100%; margin-bottom:18px;
+    background:var(--card); border-radius:var(--r-card);
+    overflow:hidden; box-shadow:var(--s1);
+    border:1px solid rgba(0,0,0,.04);
+    transition:transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s;
+}
+.card:hover { transform:translateY(-6px) scale(1.008); box-shadow:var(--s3); }
+.card img { width:100%; height:auto; display:block; cursor:zoom-in; transition:filter .2s; }
+.card:hover img { filter:brightness(1.04); }
+.card-info { padding:13px 15px 15px; }
+.card-title { font-size:.97rem; font-weight:700; line-height:1.4; margin-bottom:8px; }
+.sender-tag {
+    display:inline-flex; align-items:center;
+    background:#edf7ed; color:var(--green-d);
+    padding:4px 12px; border-radius:20px;
+    font-size:.8rem; font-weight:600;
+}
+.sender-icon { margin-right:4px; }
+
+/* Lightbox */
+#lightbox {
+    display:none; position:fixed; inset:0; z-index:99999;
+    background:rgba(5,15,5,.88); backdrop-filter:blur(10px);
+    align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .28s;
+}
+#lightbox.active { opacity:1; pointer-events:auto; display:flex; }
+#lightbox img {
+    max-width:90vw; max-height:88vh; border-radius:14px;
+    box-shadow:0 24px 64px rgba(0,0,0,.5);
+    transform:scale(.94); transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+#lightbox.active img { transform:scale(1); }
+#lightbox-close {
+    position:absolute; top:24px; right:36px;
+    color:rgba(255,255,255,.8); font-size:38px; font-weight:300;
+    cursor:pointer; transition:color .2s, transform .2s;
+}
+#lightbox-close:hover { color:#fff; transform:scale(1.15); }
+
+@keyframes fadeDown{
+    from{ opacity:0; transform:translateY(-16px); }
+    to{ opacity:1; transform:translateY(0); }
+}
+@keyframes fadeIn{
+    from{ opacity:0; }
+    to{ opacity:1; }
+}
+</style>
 </head>
 <body>
+<div class="wrap">
 
-    <div class="header">
-        <h1>🌱 皮克敏散步珍藏</h1>
-        <p>紀錄我們踏過的每一寸土地，與朋友寄來的遠方問候</p>
-    </div>
+<div class="header">
+    <h1>🌱 皮克敏散步珍藏</h1>
+    <p>紀錄我們踏過的每一寸土地，與朋友寄來的遠方問候</p>
+</div>
 
-    <!-- 加入地圖 -->
-    <div id="map"></div>
+<div id="map"></div>
 
-    
-    <div class="filter-wrapper region-wrapper" style="margin-bottom: 10px;">
-        <div class="filter-fade-left"></div>
-        <div class="filter-fade-right"></div>
-        <div class="filter-container region-container">
-            <button class="filter-btn region-btn active" onclick="filterRegion('all')">🌍 全部地區</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('台北市')">🇹🇼 台北市</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('新北市')">🇹🇼 新北市</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('桃園市')">🇹🇼 桃園市</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('台中市')">🇹🇼 台中市</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('彰化縣')">🇹🇼 彰化縣</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('雲林縣')">🇹🇼 雲林縣</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('嘉義縣')">🇹🇼 嘉義縣</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('台南市')">🇹🇼 台南市</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('高雄市')">🇹🇼 高雄市</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('台東縣')">🇹🇼 台東縣</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('日本')">🇯🇵 日本</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('韓國')">🇰🇷 韓國</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('菲律賓')">🇵🇭 菲律賓</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('新加坡')">🇸🇬 新加坡</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('紐西蘭')">🇳🇿 紐西蘭</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('挪威')">🇳🇴 挪威</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('芬蘭')">🇫🇮 芬蘭</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('冰島')">🇮🇸 冰島</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('波蘭')">🇵🇱 波蘭</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('比利時')">🇧🇪 比利時</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('英國')">🇬🇧 英國</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('西班牙')">🇪🇸 西班牙</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('墨西哥')">🇲🇽 墨西哥</button>
-            <button class="filter-btn region-btn" onclick="filterRegion('其他')">❓ 其他</button>
+<div class="filters">
+    <!-- 地區 -->
+    <div class="accordion open" id="regionAcc">
+        <div class="acc-header" onclick="toggleAcc('regionAcc','regionPrev')">
+            <span class="acc-label">🌍 地區</span>
+            <span class="acc-preview" id="regionPrev">全部地區</span>
+            <span class="acc-chevron">▼</span>
+        </div>
+        <div class="acc-body">
+    <button class="filter-btn region-btn active" onclick="filterRegion('all')">🌍 全部地區</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('台北市')">🇹🇼 台北市</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('新北市')">🇹🇼 新北市</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('桃園市')">🇹🇼 桃園市</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('台中市')">🇹🇼 台中市</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('彰化縣')">🇹🇼 彰化縣</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('雲林縣')">🇹🇼 雲林縣</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('嘉義縣')">🇹🇼 嘉義縣</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('台南市')">🇹🇼 台南市</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('高雄市')">🇹🇼 高雄市</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('台東縣')">🇹🇼 台東縣</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('日本')">🇯🇵 日本</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('韓國')">🇰🇷 韓國</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('菲律賓')">🇵🇭 菲律賓</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('新加坡')">🇸🇬 新加坡</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('紐西蘭')">🇳🇿 紐西蘭</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('挪威')">🇳🇴 挪威</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('芬蘭')">🇫🇮 芬蘭</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('冰島')">🇮🇸 冰島</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('波蘭')">🇵🇱 波蘭</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('比利時')">🇧🇪 比利時</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('法國')">🇫🇷 法國</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('英國')">🇬🇧 英國</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('義大利')">🇮🇹 義大利</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('希臘')">🇬🇷 希臘</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('塞爾維亞')">🇷🇸 塞爾維亞</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('墨西哥')">🇲🇽 墨西哥</button>
+    <button class="filter-btn region-btn" onclick="filterRegion('埃及')">🇪🇬 埃及</button>
         </div>
     </div>
 
-    <div class="filter-wrapper">
-        <div class="filter-fade-left"></div>
-        <div class="filter-fade-right"></div>
-        <div class="filter-container">
-        <button class="filter-btn active" onclick="filterSelection('all')">全部顯示</button>
-        <button class="filter-btn" onclick="filterSelection('猴莎蕾')">💌 猴莎蕾</button>
-        <button class="filter-btn" onclick="filterSelection('皮卡丘')">💌 皮卡丘</button>
-        <button class="filter-btn" onclick="filterSelection('RPON')">💌 RPON</button>
-        <button class="filter-btn" onclick="filterSelection('Alyssa')">💌 Alyssa</button>
-        <button class="filter-btn" onclick="filterSelection('梨')">💌 梨</button>
-        <button class="filter-btn" onclick="filterSelection('安伯')">💌 安伯</button>
-        <button class="filter-btn" onclick="filterSelection('黃色電勞贖')">💌 黃色電勞贖</button>
-        <button class="filter-btn" onclick="filterSelection('丁小豆')">💌 丁小豆</button>
-        <button class="filter-btn" onclick="filterSelection('珊珊珊迪')">💌 珊珊珊迪</button>
-        <button class="filter-btn" onclick="filterSelection('Ariel')">💌 Ariel</button>
-        <button class="filter-btn" onclick="filterSelection('Markblue')">💌 Markblue</button>
-        <button class="filter-btn" onclick="filterSelection('Elisa garden')">💌 Elisa garden</button>
-        <button class="filter-btn" onclick="filterSelection('G-DRAGON')">💌 G-DRAGON</button>
-        <button class="filter-btn" onclick="filterSelection('Jenny')">💌 Jenny</button>
-        <button class="filter-btn" onclick="filterSelection('Jessy')">💌 Jessy</button>
-        <button class="filter-btn" onclick="filterSelection('Kimi')">💌 Kimi</button>
-        <button class="filter-btn" onclick="filterSelection('Lanyu')">💌 Lanyu</button>
-        <button class="filter-btn" onclick="filterSelection('Onion')">💌 Onion</button>
-        <button class="filter-btn" onclick="filterSelection('Ritana')">💌 Ritana</button>
-        <button class="filter-btn" onclick="filterSelection('TING-示斤')">💌 TING-示斤</button>
-        <button class="filter-btn" onclick="filterSelection('Ying')">💌 Ying</button>
-        <button class="filter-btn" onclick="filterSelection('Yiru')">💌 Yiru</button>
-        <button class="filter-btn" onclick="filterSelection('Yiwenの柴日記')">💌 Yiwenの柴日記</button>
-        <button class="filter-btn" onclick="filterSelection('Yo')">💌 Yo</button>
-        <button class="filter-btn" onclick="filterSelection('book94aul')">💌 book94aul</button>
-        <button class="filter-btn" onclick="filterSelection('mullova')">💌 mullova</button>
-        <button class="filter-btn" onclick="filterSelection('ooo')">💌 ooo</button>
-        <button class="filter-btn" onclick="filterSelection('xuyyn')">💌 xuyyn</button>
-        <button class="filter-btn" onclick="filterSelection('ysn')">💌 ysn</button>
-        <button class="filter-btn" onclick="filterSelection('凱西妹紙')">💌 凱西妹紙</button>
-        <button class="filter-btn" onclick="filterSelection('咬到德頭(Ф_Ф)')">💌 咬到德頭(Ф_Ф)</button>
-        <button class="filter-btn" onclick="filterSelection('咬到舌頭(Φ_Φ)')">💌 咬到舌頭(Φ_Φ)</button>
-        <button class="filter-btn" onclick="filterSelection('夏夕夏景')">💌 夏夕夏景</button>
-        <button class="filter-btn" onclick="filterSelection('守雛友悠惠')">💌 守雛友悠惠</button>
-        <button class="filter-btn" onclick="filterSelection('尼羅河女兒')">💌 尼羅河女兒</button>
-        <button class="filter-btn" onclick="filterSelection('巧巧')">💌 巧巧</button>
-        <button class="filter-btn" onclick="filterSelection('我愛熊熊')">💌 我愛熊熊</button>
-        <button class="filter-btn" onclick="filterSelection('皮卡在巨大被人偷打*._.')">💌 皮卡在巨大被人偷打*._.</button>
-        <button class="filter-btn" onclick="filterSelection('阿呆呆')">💌 阿呆呆</button>
-        <button class="filter-btn" onclick="filterSelection('阿霍')">💌 阿霍</button>
-        <button class="filter-btn" onclick="filterSelection('靜靜走')">💌 靜靜走</button>
-        <button class="filter-btn" onclick="filterSelection('하리보')">💌 하리보</button>
+    <!-- 寄件人 -->
+    <div class="accordion" id="senderAcc">
+        <div class="acc-header" onclick="toggleAcc('senderAcc','senderPrev')">
+            <span class="acc-label">💌 寄件人</span>
+            <span class="acc-preview" id="senderPrev">全部顯示</span>
+            <span class="acc-chevron">▼</span>
+        </div>
+        <div class="acc-body">
+    <button class="filter-btn sender-btn active" onclick="filterSelection('all')">全部顯示</button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('猴莎蕾')">💌 猴莎蕾 <span class="sender-count">51</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('皮卡丘')">💌 皮卡丘 <span class="sender-count">12</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('RPON')">💌 RPON <span class="sender-count">9</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('梨')">💌 梨 <span class="sender-count">7</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Jessy')">💌 Jessy <span class="sender-count">7</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('夏夕夏景')">💌 夏夕夏景 <span class="sender-count">7</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Yiwenの柴日記')">💌 Yiwenの柴日記 <span class="sender-count">5</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Yo')">💌 Yo <span class="sender-count">4</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Markblue')">💌 Markblue <span class="sender-count">4</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('丁小豆')">💌 丁小豆 <span class="sender-count">4</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('黃色電勞贖')">💌 黃色電勞贖 <span class="sender-count">4</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Ritana')">💌 Ritana <span class="sender-count">4</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('mullova')">💌 mullova <span class="sender-count">4</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('凱西妹紙')">💌 凱西妹紙 <span class="sender-count">4</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('尼羅河女兒')">💌 尼羅河女兒 <span class="sender-count">4</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('TING-示斤')">💌 TING-示斤 <span class="sender-count">3</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('安伯')">💌 安伯 <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Alyssa')">💌 Alyssa <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Ariel')">💌 Ariel <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('阿霍')">💌 阿霍 <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('G-DRAGON')">💌 G-DRAGON <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Yiru')">💌 Yiru <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('皮卡在巨大被人偷打*._.')">💌 皮卡在巨大被人偷打*._. <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Jenny')">💌 Jenny <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('ooo')">💌 ooo <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('book94aul')">💌 book94aul <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Elisa garden')">💌 Elisa garden <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('阿呆呆')">💌 阿呆呆 <span class="sender-count">2</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('하리보')">💌 하리보 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Lanyu')">💌 Lanyu <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('靜靜走')">💌 靜靜走 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('珊珊珊迪-媽媽沒菇打求救！')">💌 珊珊珊迪-媽媽沒菇打求救！ <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('巧巧')">💌 巧巧 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('咬到舌頭(Φ_Φ)')">💌 咬到舌頭(Φ_Φ) <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('守雛友悠惠')">💌 守雛友悠惠 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('xuyyn')">💌 xuyyn <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('咬到德頭(Ф_Ф)')">💌 咬到德頭(Ф_Ф) <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Kimi')">💌 Kimi <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Ying')">💌 Ying <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Onion')">💌 Onion <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('我愛熊熊')">💌 我愛熊熊 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('ysn')">💌 ysn <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('內門有隻吉貓貓')">💌 內門有隻吉貓貓 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Anna佳')">💌 Anna佳 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('鬼鬼')">💌 鬼鬼 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('OOO')">💌 OOO <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('酸溜溜')">💌 酸溜溜 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('rusagiYYZ')">💌 rusagiYYZ <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('NeoXaser')">💌 NeoXaser <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('ming856')">💌 ming856 <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Monoko')">💌 Monoko <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('lulala')">💌 lulala <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('mko0mk')">💌 mko0mk <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('Zhx')">💌 Zhx <span class="sender-count">1</span></button>
+    <button class="filter-btn sender-btn" onclick="filterSelection('皮克敏飼養中')">💌 皮克敏飼養中 <span class="sender-count">1</span></button>
         </div>
     </div>
+</div>
 
-    <div class="gallery">
-        <div class="card item 皮卡丘" data-lat="25.0478" data-lng="121.5170" data-region="台北市"</h3>
+<div class="gallery">
+        <div class="card item 皮卡丘" data-lat="25.0478" data-lng="121.517" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_1.jpg" alt="臺北車站 Taipei Main Station" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">臺北車站 Taipei Main Station</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
             </div>
         </div>
-        <div class="card item 皮卡丘" data-lat="25.0263" data-lng="121.5434" data-region="台北市"</h3>
+        <div class="card item 皮卡丘" data-lat="25.07344220010662" data-lng="121.52244434504385" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_2.jpg" alt="蒲公英" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">蒲公英</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
             </div>
         </div>
-        <div class="card item RPON" data-lat="25.0330" data-lng="121.5654" data-region="其他"</h3>
+        <div class="card item RPON" data-lat="25.024314535132497" data-lng="121.55340369028347" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_3.jpg" alt="鋼構太空梭" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">鋼構太空梭</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
             </div>
         </div>
-        <div class="card item 皮卡丘" data-lat="25.0347" data-lng="121.5218" data-region="台北市"</h3>
+        <div class="card item 皮卡丘" data-lat="25.0345" data-lng="121.5218" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_4.jpg" alt="CKS Memorial Hall" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">CKS Memorial Hall</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
             </div>
         </div>
-        <div class="card item RPON" data-lat="25.0400" data-lng="121.5300" data-region="其他"</h3>
+        <div class="card item RPON" data-lat="23.700497075053903" data-lng="120.95875357700024" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_5.jpg" alt="Allen Park Colorful Mural" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Allen Park Colorful Mural</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
             </div>
         </div>
-        <div class="card item 梨" data-lat="33.4862" data-lng="129.8272" data-region="日本"</h3>
+        <div class="card item 梨" data-lat="33.4833" data-lng="129.8333" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_6.jpg" alt="浜野浦の棚田" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">浜野浦の棚田</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
             </div>
         </div>
-        <div class="card item 安伯" data-lat="25.0450" data-lng="121.5500" data-region="其他"</h3>
+        <div class="card item 安伯" data-lat="23.731180925553847" data-lng="120.9464862536437" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_7.jpg" alt="Bark Free Zone Dog Park" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Bark Free Zone Dog Park</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：安伯</span>
             </div>
         </div>
-        <div class="card item 皮卡丘" data-lat="25.0395" data-lng="121.5113" data-region="台北市"</h3>
+        <div class="card item 皮卡丘" data-lat="25.0396" data-lng="121.5113" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_8.jpg" alt="總統府後門" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">總統府後門</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
             </div>
         </div>
-        <div class="card item RPON" data-lat="25.0420" data-lng="121.5400" data-region="其他"</h3>
+        <div class="card item RPON" data-lat="25.02817602972007" data-lng="121.57572973807392" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_9.jpg" alt="Action Doll-3" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Action Doll-3</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
             </div>
         </div>
-        <div class="card item Alyssa" data-lat="24.9926" data-lng="121.4641" data-region="新北市"</h3>
+        <div class="card item Alyssa" data-lat="25.0066" data-lng="121.4658" data-region="新北市">
+            <img src="LINE_ALBUM_名信片_260520_10.jpg" alt="遠陽加州雕塑" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">遠陽加州雕塑</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：Alyssa</span>
             </div>
         </div>
-        <div class="card item 黃色電勞贖" data-lat="25.0410" data-lng="121.5350" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：黃色電勞贖</span>
-            </div>
-        </div>
-        <div class="card item RPON" data-lat="25.0500" data-lng="121.5500" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
-            </div>
-        </div>
-        <div class="card item 丁小豆" data-lat="25.0300" data-lng="121.5200" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
-            </div>
-        </div>
-        <div class="card item Alyssa" data-lat="25.0336" data-lng="121.5552" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Alyssa</span>
-            </div>
-        </div>
-        <div class="card item 丁小豆" data-lat="25.0400" data-lng="121.5600" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
-            </div>
-        </div>
-        <div class="card item 皮卡丘" data-lat="25.0273" data-lng="121.5348" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
-            </div>
-        </div>
-        <div class="card item 珊珊珊迪" data-lat="25.0350" data-lng="121.5450" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：珊珊珊迪</span>
-            </div>
-        </div>
-        <div class="card item Ariel" data-lat="22.6253" data-lng="120.3601" data-region="高雄市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ariel</span>
-            </div>
-        </div>
-        <div class="card item 梨" data-lat="23.8340" data-lng="120.9320" data-region="彰化縣"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
-            </div>
-        </div>
-        <div class="card item Markblue" data-lat="25.0500" data-lng="121.5300" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="37.5738600" data-lng="126.9816700" data-region="韓國"</h3>
+        <div class="card item 하리보" data-lat="37.5738" data-lng="126.9817" data-region="韓國">
+            <img src="LINE_ALBUM_名信片_260520_11.jpg" alt="대한불교총본산 조계사" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">대한불교총본산 조계사</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 韓國</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：하리보</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="61.2222" data-lng="10.4500" data-region="挪威"</h3>
+        <div class="card item 猴莎蕾" data-lat="60.472" data-lng="8.4689" data-region="挪威">
+            <img src="LINE_ALBUM_名信片_260520_12.jpg" alt="Hiking and skiing trail marker" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Hiking and skiing trail marker</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 挪威</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
             </div>
         </div>
-        <div class="card item Yo" data-lat="25.0796" data-lng="121.2342" data-region="桃園市"</h3>
+        <div class="card item Yo" data-lat="25.0777" data-lng="121.2328" data-region="桃園市">
+            <img src="LINE_ALBUM_名信片_260520_13.jpg" alt="機場行李轉動帶" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">機場行李轉動帶</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 桃園市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yo</span>
             </div>
         </div>
-        <div class="card item 安伯" data-lat="25.0450" data-lng="121.5300" data-region="台北市"</h3>
+        <div class="card item 安伯" data-lat="25.004946107535012" data-lng="121.54508496161155" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_14.jpg" alt="草間彌生 - 南瓜裝置藝術" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">草間彌生 - 南瓜裝置藝術</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：安伯</span>
             </div>
         </div>
-        <div class="card item 梨" data-lat="37.5580" data-lng="139.8160" data-region="日本"</h3>
+        <div class="card item 梨" data-lat="31.8833" data-lng="130.9333" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_15.jpg" alt="御池觀音" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">御池觀音</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
             </div>
         </div>
-        <div class="card item Lanyu" data-lat="23.7580" data-lng="120.6120" data-region="雲林縣"</h3>
+        <div class="card item Lanyu" data-lat="23.7092" data-lng="120.4313" data-region="雲林縣">
+            <img src="LINE_ALBUM_名信片_260520_16.jpg" alt="路口金石獅" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">路口金石獅</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 雲林縣</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：Lanyu</span>
             </div>
         </div>
-        <div class="card item Markblue" data-lat="1.3500" data-lng="103.8700" data-region="新加坡"</h3>
+        <div class="card item Markblue" data-lat="1.2833" data-lng="103.85" data-region="新加坡">
+            <img src="LINE_ALBUM_名信片_260520_17.jpg" alt="Hide And Seek Mural" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Hide And Seek Mural</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新加坡</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
             </div>
         </div>
-        <div class="card item 靜靜走" data-lat="25.0150" data-lng="121.4600" data-region="其他"</h3>
+        <div class="card item 靜靜走" data-lat="25.077969201250664" data-lng="121.55054972140611" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_18.jpg" alt="雀鳥玻璃彩繪" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">雀鳥玻璃彩繪</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：靜靜走</span>
             </div>
         </div>
-        <div class="card item 皮卡丘" data-lat="41.2900" data-lng="141.1800" data-region="日本"</h3>
+        <div class="card item 皮卡丘" data-lat="35.6895" data-lng="139.6917" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_19.jpg" alt="可愛い子犬" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">可愛い子犬</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
             </div>
         </div>
-        <div class="card item 梨" data-lat="25.1320" data-lng="121.5000" data-region="其他"</h3>
+        <div class="card item 梨" data-lat="25.0128431357701" data-lng="121.54489066764977" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_20.jpg" alt="金剛經牆" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">金剛經牆</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
             </div>
         </div>
-        <div class="card item 梨" data-lat="25.0193" data-lng="121.4682" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
+        <div class="card item RPON" data-lat="25.04280845604032" data-lng="121.5677610202319" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_21.jpg" alt="紅逗冰室" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">紅逗冰室</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
             </div>
         </div>
-        <div class="card item 阿霍" data-lat="25.0958" data-lng="121.4597" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿霍</span>
+        <div class="card item 丁小豆" data-lat="25.027702952686855" data-lng="121.56054632659881" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_22.jpg" alt="Seed Infinity 2.0" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Seed Infinity 2.0</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
             </div>
         </div>
-        <div class="card item Yo" data-lat="25.0024" data-lng="121.5205" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yo</span>
+        <div class="card item Alyssa" data-lat="25.034" data-lng="121.554" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_23.jpg" alt="信義延吉奠基紀事" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">信義延吉奠基紀事</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Alyssa</span>
             </div>
         </div>
-        <div class="card item TING示斤" data-lat="25.0455" data-lng="121.5471" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：TING-示斤</span>
+        <div class="card item 丁小豆" data-lat="25.08004418577773" data-lng="121.56267516683779" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_24.jpg" alt="花木蘭" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">花木蘭</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
             </div>
         </div>
-        <div class="card item 阿霍" data-lat="25.027" data-lng="121.5132" data-region="新北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿霍</span>
+        <div class="card item 皮卡丘" data-lat="25.0274" data-lng="121.5348" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_25.jpg" alt="台北清真寺" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">台北清真寺</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="25.0547" data-lng="121.5346" data-region="台中市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+        <div class="card item 珊珊珊迪媽媽沒菇打求救" data-lat="25.018480042716295" data-lng="121.53979823698586" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_26.jpg" alt="號角響起" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">號角響起</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：珊珊珊迪-媽媽沒菇打求救！</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="25.0331" data-lng="121.5691" data-region="台中市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0324" data-lng="121.498" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item Ariel" data-lat="25.025" data-lng="121.5754" data-region="其他"</h3>
+        <div class="card item Ariel" data-lat="22.6273" data-lng="120.3014" data-region="高雄市">
+            <img src="LINE_ALBUM_名信片_260520_27.jpg" alt="鳳山寺" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">鳳山寺</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 高雄市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ariel</span>
             </div>
         </div>
-        <div class="card item GDRAGON" data-lat="25.0032" data-lng="121.4693" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：G-DRAGON</span>
+        <div class="card item 梨" data-lat="24.0673" data-lng="120.5489" data-region="彰化縣">
+            <img src="LINE_ALBUM_名信片_260520_28.jpg" alt="淨業林" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">淨業林</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 彰化縣</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="25.0004" data-lng="121.4548" data-region="台南市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item Markblue" data-lat="25.0804" data-lng="121.5259" data-region="其他"</h3>
+        <div class="card item Markblue" data-lat="23.72364047524808" data-lng="120.9764565499153" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_29.jpg" alt="Spade Manlife Statue" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Spade Manlife Statue</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="25.0636" data-lng="121.574" data-region="芬蘭"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+        <div class="card item 黃色電勞贖" data-lat="25.061257917707906" data-lng="121.59366740121521" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_30.jpg" alt="馬賽克藝術花園" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">馬賽克藝術花園</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：黃色電勞贖</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="25.0705" data-lng="121.4859" data-region="芬蘭"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+        <div class="card item 梨" data-lat="25.048053947170686" data-lng="121.52310425834565" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_31.jpg" alt="大力神盃" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">大力神盃</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
             </div>
         </div>
-        <div class="card item 巧巧" data-lat="25.0649" data-lng="121.505" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：巧巧</span>
+        <div class="card item 阿霍" data-lat="24.992844038047576" data-lng="121.5452269557243" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_32.jpg" alt="往昔之織" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">往昔之織</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿霍</span>
             </div>
         </div>
-        <div class="card item Yo" data-lat="25.0104" data-lng="121.5344" data-region="桃園市"</h3>
+        <div class="card item Yo" data-lat="25.04588753323105" data-lng="121.61224875022714" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_33.jpg" alt="天公爐" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">天公爐</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yo</span>
             </div>
         </div>
-        <div class="card item Yiru" data-lat="25.0897" data-lng="121.4737" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiru</span>
-            </div>
-        </div>
-        <div class="card item 咬到舌頭" data-lat="25.0825" data-lng="121.463" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：咬到舌頭(Φ_Φ)</span>
-            </div>
-        </div>
-        <div class="card item 守雛友悠惠" data-lat="25.009" data-lng="121.4834" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：守雛友悠惠</span>
-            </div>
-        </div>
-        <div class="card item 皮卡在巨大被人偷打" data-lat="25.002" data-lng="121.4771" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡在巨大被人偷打*._.</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0717" data-lng="121.5603" data-region="挪威"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0314" data-lng="121.5161" data-region="菲律賓"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0705" data-lng="121.504" data-region="紐西蘭"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0518" data-lng="121.5669" data-region="冰島"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item Jessy" data-lat="25.0859" data-lng="121.5756" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
-            </div>
-        </div>
-        <div class="card item RPON" data-lat="25.0076" data-lng="121.4694" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
-            </div>
-        </div>
-        <div class="card item Jenny" data-lat="25.0654" data-lng="121.5204" data-region="台東縣"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jenny</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0315" data-lng="121.4762" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item TING示斤" data-lat="25.0092" data-lng="121.4628" data-region="其他"</h3>
+        <div class="card item TING示斤" data-lat="25.0425" data-lng="121.509" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_34.jpg" alt="台北府城西門 (寶成門) 裝置藝術" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">台北府城西門 (寶成門) 裝置藝術</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：TING-示斤</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="25.071" data-lng="121.5108" data-region="西班牙"</h3>
+        <div class="card item 阿霍" data-lat="25.0112" data-lng="121.4617" data-region="新北市">
+            <img src="LINE_ALBUM_名信片_260520_35.jpg" alt="板橋燈泡小子" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">板橋燈泡小子</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿霍</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="24.2543" data-lng="120.5301" data-region="台中市">
+            <img src="LINE_ALBUM_名信片_260520_36.jpg" alt="梧棲三玄宮" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">梧棲三玄宮</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台中市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="25.0653" data-lng="121.5117" data-region="英國"</h3>
+        <div class="card item 猴莎蕾" data-lat="24.2693" data-lng="120.5758" data-region="台中市">
+            <img src="LINE_ALBUM_名信片_260520_37.jpg" alt="紫雲巖文化大樓" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">紫雲巖文化大樓</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台中市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
             </div>
         </div>
-        <div class="card item 猴莎蕾" data-lat="25.0351" data-lng="121.5266" data-region="其他"</h3>
+        <div class="card item 猴莎蕾" data-lat="24.2333" data-lng="120.5592" data-region="台中市">
+            <img src="LINE_ALBUM_名信片_260520_38.jpg" alt="福德正神" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">福德正神</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台中市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
             </div>
         </div>
-        <div class="card item Ritana" data-lat="25.0389" data-lng="121.5023" data-region="新北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ritana</span>
+        <div class="card item Ariel" data-lat="25.038701242720887" data-lng="121.56241890782995" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_39.jpg" alt="葉拓美牆" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">葉拓美牆</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ariel</span>
             </div>
         </div>
-        <div class="card item ooo" data-lat="25.0071" data-lng="121.5574" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：ooo</span>
-            </div>
-        </div>
-        <div class="card item book94aul" data-lat="25.038" data-lng="121.5316" data-region="新北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：book94aul</span>
-            </div>
-        </div>
-        <div class="card item 皮卡在巨大被人偷打" data-lat="25.0413" data-lng="121.5165" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡在巨大被人偷打*._.</span>
-            </div>
-        </div>
-        <div class="card item xuyyn" data-lat="25.0517" data-lng="121.471" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：xuyyn</span>
-            </div>
-        </div>
-        <div class="card item 夏夕夏景" data-lat="25.0757" data-lng="121.4713" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
-            </div>
-        </div>
-        <div class="card item mullova" data-lat="25.0198" data-lng="121.4915" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：mullova</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0402" data-lng="121.4641" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item 咬到德頭" data-lat="25.0833" data-lng="121.5124" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：咬到德頭(Ф_Ф)</span>
-            </div>
-        </div>
-        <div class="card item Kimi" data-lat="25.0794" data-lng="121.5774" data-region="墨西哥"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Kimi</span>
-            </div>
-        </div>
-        <div class="card item Elisagarden" data-lat="25.042" data-lng="121.4531" data-region="西班牙"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Elisa garden</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0738" data-lng="121.4562" data-region="冰島"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item 凱西妹紙" data-lat="25.0656" data-lng="121.5341" data-region="嘉義縣"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：凱西妹紙</span>
-            </div>
-        </div>
-        <div class="card item RPON" data-lat="25.0066" data-lng="121.5396" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
-            </div>
-        </div>
-        <div class="card item Ying" data-lat="25.0357" data-lng="121.4569" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ying</span>
-            </div>
-        </div>
-        <div class="card item 夏夕夏景" data-lat="25.0289" data-lng="121.5535" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
-            </div>
-        </div>
-        <div class="card item Yiwen柴日記" data-lat="25.0436" data-lng="121.4908" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0308" data-lng="121.5208" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item ooo" data-lat="25.0711" data-lng="121.5517" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：ooo</span>
-            </div>
-        </div>
-        <div class="card item Ritana" data-lat="25.09" data-lng="121.5754" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ritana</span>
-            </div>
-        </div>
-        <div class="card item 皮卡丘" data-lat="25.0341" data-lng="121.5388" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
-            </div>
-        </div>
-        <div class="card item 丁小豆" data-lat="25.065" data-lng="121.5214" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0323" data-lng="121.4701" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.061" data-lng="121.5075" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item RPON" data-lat="25.0737" data-lng="121.4582" data-region="高雄市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
-            </div>
-        </div>
-        <div class="card item GDRAGON" data-lat="25.0074" data-lng="121.5562" data-region="台北市"</h3>
+        <div class="card item GDRAGON" data-lat="25.071366195650675" data-lng="121.51689702722378" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_40.jpg" alt="長池" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">長池</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：G-DRAGON</span>
             </div>
         </div>
-        <div class="card item 夏夕夏景" data-lat="25.0422" data-lng="121.471" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
-            </div>
-        </div>
-        <div class="card item Yiwen柴日記" data-lat="25.0793" data-lng="121.5073" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
-            </div>
-        </div>
-        <div class="card item 皮卡丘" data-lat="25.089" data-lng="121.4683" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
-            </div>
-        </div>
-        <div class="card item book94aul" data-lat="25.0249" data-lng="121.4878" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：book94aul</span>
-            </div>
-        </div>
-        <div class="card item Jenny" data-lat="25.049" data-lng="121.517" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jenny</span>
-            </div>
-        </div>
-        <div class="card item 阿呆呆" data-lat="25.0221" data-lng="121.5361" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿呆呆</span>
-            </div>
-        </div>
-        <div class="card item Onion" data-lat="25.083" data-lng="121.5534" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Onion</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0766" data-lng="121.562" data-region="台北市"</h3>
+        <div class="card item 猴莎蕾" data-lat="23.1009" data-lng="120.0357" data-region="台南市">
+            <img src="LINE_ALBUM_名信片_260520_41.jpg" alt="國聖燈塔" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">國聖燈塔</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台南市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
             </div>
         </div>
-        <div class="card item 丁小豆" data-lat="25.044" data-lng="121.5056" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
-            </div>
-        </div>
-        <div class="card item 夏夕夏景" data-lat="25.0683" data-lng="121.5254" data-region="其他"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0058" data-lng="121.5662" data-region="波蘭"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item Jessy" data-lat="25.081" data-lng="121.5079" data-region="日本"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
-            </div>
-        </div>
-        <div class="card item 我愛熊熊" data-lat="25.0227" data-lng="121.4544" data-region="台北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：我愛熊熊</span>
-            </div>
-        </div>
-        <div class="card item 猴莎蕾" data-lat="25.0597" data-lng="121.5001" data-region="比利時"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
-            </div>
-        </div>
-        <div class="card item 凱西妹紙" data-lat="25.0228" data-lng="121.4608" data-region="冰島"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：凱西妹紙</span>
-            </div>
-        </div>
-        <div class="card item 尼羅河女兒" data-lat="25.0684" data-lng="121.5541" data-region="新北市"</h3>
-                <span class="sender-tag"><span class="sender-icon">💌</span>來自：尼羅河女兒</span>
-            </div>
-        </div>
-        <div class="card item Markblue" data-lat="25.0264" data-lng="121.4866" data-region="新北市"</h3>
+        <div class="card item Markblue" data-lat="23.74564145121589" data-lng="120.93561250071245" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_42.jpg" alt="Ballerina Statue Fountain" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Ballerina Statue Fountain</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
             </div>
         </div>
-        <div class="card item ysn" data-lat="25.0464" data-lng="121.5439" data-region="其他"</h3>
+        <div class="card item 猴莎蕾" data-lat="61.9241" data-lng="25.7482" data-region="芬蘭">
+            <img src="LINE_ALBUM_名信片_260520_43.jpg" alt="Old Biathlon Cabin" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Old Biathlon Cabin</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 芬蘭</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="63.15" data-lng="23.75" data-region="芬蘭">
+            <img src="LINE_ALBUM_名信片_260520_44.jpg" alt="Itäkylän Nuorisoseura" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Itäkylän Nuorisoseura</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 芬蘭</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 巧巧" data-lat="36.188823627645775" data-lng="138.27176132087263" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_45.jpg" alt="Fukasaku" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Fukasaku</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：巧巧</span>
+            </div>
+        </div>
+        <div class="card item Yo" data-lat="24.8824" data-lng="121.2858" data-region="桃園市">
+            <img src="LINE_ALBUM_名信片_260520_46.jpg" alt="大溪橋 拱門" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">大溪橋 拱門</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 桃園市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yo</span>
+            </div>
+        </div>
+        <div class="card item Yiru" data-lat="25.07751304823525" data-lng="121.52442925765351" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_47.jpg" alt="飛馬" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">飛馬</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiru</span>
+            </div>
+        </div>
+        <div class="card item 咬到舌頭Φ_Φ" data-lat="25.044293957275933" data-lng="121.57875294015308" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_48.jpg" alt="自来也" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">自来也</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：咬到舌頭(Φ_Φ)</span>
+            </div>
+        </div>
+        <div class="card item 守雛友悠惠" data-lat="25.023396322315488" data-lng="121.57111291797139" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_49.jpg" alt="Naruto & Gamakichi" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Naruto & Gamakichi</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：守雛友悠惠</span>
+            </div>
+        </div>
+        <div class="card item 皮卡在巨大被人偷打_" data-lat="23.70036066769307" data-lng="120.93670677168474" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_50.jpg" alt="Iruka" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Iruka</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡在巨大被人偷打*._.</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="59.8333" data-lng="10.4333" data-region="挪威">
+            <img src="LINE_ALBUM_名信片_260520_51.jpg" alt="Gruvearbeideren" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Gruvearbeideren</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 挪威</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="11.1963" data-lng="119.2982" data-region="菲律賓">
+            <img src="LINE_ALBUM_名信片_260520_52.jpg" alt="Matinloc Resort" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Matinloc Resort</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 菲律賓</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="-40.9767" data-lng="174.9657" data-region="紐西蘭">
+            <img src="LINE_ALBUM_名信片_260520_53.jpg" alt="Escarpment Trail Swing Bridge" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Escarpment Trail Swing Bridge</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 紐西蘭</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="63.4333" data-lng="-20.2667" data-region="冰島">
+            <img src="LINE_ALBUM_名信片_260520_54.jpg" alt="Velkomin til Vestmannaeyja" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Velkomin til Vestmannaeyja</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 冰島</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="25.0339" data-lng="121.5644" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_55.jpg" alt="Taipei 101 91F" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Taipei 101 91F</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="24.99539258949102" data-lng="121.61311111076287" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_56.jpg" alt="鑫鑫財運旺旺財神爺，保佑你賺大錢" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">鑫鑫財運旺旺財神爺，保佑你賺大錢</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item Jenny" data-lat="22.3783" data-lng="121.0044" data-region="台東縣">
+            <img src="LINE_ALBUM_名信片_260520_57.jpg" alt="太平洋鹹水溫泉" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">太平洋鹹水溫泉</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台東縣</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jenny</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="36.164012629122816" data-lng="138.23390032044156" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_58.jpg" alt="鹿島神社" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">鹿島神社</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item TING示斤" data-lat="25.02304008210328" data-lng="121.52077845739363" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_59.jpg" alt="鶼鰈情深" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">鶼鰈情深</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：TING-示斤</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="41.3902" data-lng="2.167" data-region="西班牙">
+            <img src="LINE_ALBUM_名信片_260520_60.jpg" alt="Fuente Gran Via-Pau Clarís" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Fuente Gran Via-Pau Clarís</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 西班牙</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="51.5074" data-lng="-0.1278" data-region="英國">
+            <img src="LINE_ALBUM_名信片_260520_61.jpg" alt="Mia's country van - fish and chips" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Mia's country van - fish and chips</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 英國</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.728695067857174" data-lng="120.95530382530504" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_62.jpg" alt="Let's Go Together mural" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Let's Go Together mural</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Ritana" data-lat="25.025" data-lng="121.46" data-region="新北市">
+            <img src="LINE_ALBUM_名信片_260520_63.jpg" alt="八德公園藝術雕塑" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">八德公園藝術雕塑</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ritana</span>
+            </div>
+        </div>
+        <div class="card item ooo" data-lat="25.0485" data-lng="121.5125" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_64.jpg" alt="臺灣鐵道局舊武道館" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">臺灣鐵道局舊武道館</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：ooo</span>
+            </div>
+        </div>
+        <div class="card item book94aul" data-lat="25.0135" data-lng="121.4285" data-region="新北市">
+            <img src="LINE_ALBUM_名信片_260520_65.jpg" alt="崑崙公園天幕籃球場" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">崑崙公園天幕籃球場</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：book94aul</span>
+            </div>
+        </div>
+        <div class="card item 皮卡在巨大被人偷打_" data-lat="23.724402622288032" data-lng="120.94328684886467" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_66.jpg" alt="Akatsuki" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Akatsuki</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡在巨大被人偷打*._.</span>
+            </div>
+        </div>
+        <div class="card item xuyyn" data-lat="36.17843258631073" data-lng="138.2635363979317" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_67.jpg" alt="飯島八幡神社" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">飯島八幡神社</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：xuyyn</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.003933107508658" data-lng="121.51671481866519" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_68.jpg" alt="福泰公園涼亭" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">福泰公園涼亭</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item mullova" data-lat="25.06114608048863" data-lng="121.56534901566704" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_69.jpg" alt="左護法熊" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">左護法熊</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：mullova</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="35.1833" data-lng="139.1167" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_70.jpg" alt="白石龍神社" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">白石龍神社</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 咬到德頭Ф_Ф" data-lat="23.73153440503048" data-lng="121.001714361783" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_71.jpg" alt="Kakashi Hatake" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Kakashi Hatake</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：咬到德頭(Ф_Ф)</span>
+            </div>
+        </div>
+        <div class="card item Kimi" data-lat="19.4326" data-lng="-99.1332" data-region="墨西哥">
+            <img src="LINE_ALBUM_名信片_260520_72.jpg" alt="Día De Muertos Mural" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Día De Muertos Mural</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 墨西哥</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Kimi</span>
+            </div>
+        </div>
+        <div class="card item Elisagarden" data-lat="20.0" data-lng="-100.0" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_73.jpg" alt="Capilla Santa María" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Capilla Santa María</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Elisa garden</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="64.1333" data-lng="-21.9333" data-region="冰島">
+            <img src="LINE_ALBUM_名信片_260520_74.jpg" alt="Brúin" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Brúin</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 冰島</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 凱西妹紙" data-lat="23.4862" data-lng="120.4449" data-region="嘉義縣">
+            <img src="LINE_ALBUM_名信片_260520_75.jpg" alt="阿里山林業村 (Alishan Village)" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">阿里山林業村 (Alishan Village)</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 嘉義縣</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：凱西妹紙</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.001862350007215" data-lng="121.56304368600401" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_76.jpg" alt="街舞少年" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">街舞少年</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item Ying" data-lat="25.052262422378337" data-lng="121.55167225709141" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_77.jpg" alt="碧海藍天" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">碧海藍天</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ying</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.042654870821583" data-lng="121.5362520617356" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_78.jpg" alt="摘蘋果的小女孩" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">摘蘋果的小女孩</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item Yiwenの柴日記" data-lat="34.8091" data-lng="133.6224" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_79.jpg" alt="備中松山城天守閣" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">備中松山城天守閣</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.73365429288151" data-lng="120.96826945410054" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_80.jpg" alt="Intersected with Nature" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Intersected with Nature</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item ooo" data-lat="25.059531429415618" data-lng="121.54504518785093" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_81.jpg" alt="螺" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">螺</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：ooo</span>
+            </div>
+        </div>
+        <div class="card item Ritana" data-lat="25.0694" data-lng="121.4423" data-region="新北市">
+            <img src="LINE_ALBUM_名信片_260520_82.jpg" alt="向日葵" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">向日葵</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ritana</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="23.6541765982877" data-lng="120.91929371047387" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_83.jpg" alt="Station in the wall" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Station in the wall</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item 丁小豆" data-lat="25.015574293207834" data-lng="121.5965650465565" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_84.jpg" alt="紫玉宮" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">紫玉宮</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="24.8844" data-lng="121.2878" data-region="桃園市">
+            <img src="LINE_ALBUM_名信片_260520_85.jpg" alt="普濟堂" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">普濟堂</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 桃園市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.685863822361085" data-lng="120.92794367428415" data-region="其他">
+            <img src="LINE_ALBUM_名信片_260520_86.jpg" alt="Fish Mural" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Fish Mural</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="22.5951" data-lng="120.3068" data-region="高雄市">
+            <img src="LINE_ALBUM_名信片_260520_87.jpg" alt="夢時代摩天輪" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">夢時代摩天輪</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 高雄市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item GDRAGON" data-lat="25.010229123773488" data-lng="121.54491815760159" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_88.jpg" alt="玫瑰花" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">玫瑰花</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：G-DRAGON</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.074" data-lng="121.527" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_89.jpg" alt="新圓山中庭" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">新圓山中庭</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item Yiwenの柴日記" data-lat="24.992422748348037" data-lng="121.52675738272762" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_90.jpg" alt="海豚涼亭" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">海豚涼亭</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.0345" data-lng="121.5218" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_91.jpg" alt="中正紀念堂涼亭" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">中正紀念堂涼亭</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item book94aul" data-lat="24.989220588453673" data-lng="121.57627063743458" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_92.jpg" alt="圖騰" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">圖騰</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：book94aul</span>
+            </div>
+        </div>
+        <div class="card item Jenny" data-lat="25.076" data-lng="121.557" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_93.jpg" alt="基隆河右岸11.0KM" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">基隆河右岸11.0KM</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jenny</span>
+            </div>
+        </div>
+        <div class="card item 阿呆呆" data-lat="25.067231611326612" data-lng="121.60284803184823" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_94.jpg" alt="LRT塗鴉藝術" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">LRT塗鴉藝術</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿呆呆</span>
+            </div>
+        </div>
+        <div class="card item Onion" data-lat="25.044415362519224" data-lng="121.54606879992838" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_95.jpg" alt="青燈伴古佛" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">青燈伴古佛</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Onion</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.03939586869292" data-lng="121.5560172110951" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_96.jpg" alt="新興公園圖畫" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">新興公園圖畫</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 丁小豆" data-lat="25.034686213319322" data-lng="121.57404809010794" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_97.jpg" alt="真武廟左石獅" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">真武廟左石獅</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：丁小豆</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.06802034440662" data-lng="121.5486526571556" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_98.jpg" alt="貳在這" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">貳在這</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="52.2333" data-lng="21.0167" data-region="波蘭">
+            <img src="LINE_ALBUM_名信片_260520_99.jpg" alt="Kościół Michała Archanioła" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Kościół Michała Archanioła</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 波蘭</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="31.9333" data-lng="130.8667" data-region="日本">
+            <img src="LINE_ALBUM_名信片_260520_100.jpg" alt="硫黄川橋" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">硫黄川橋</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item 我愛熊熊" data-lat="25.081607755151808" data-lng="121.5426836913295" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_101.jpg" alt="牆上壁畫-機器手臂彩繪" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">牆上壁畫-機器手臂彩繪</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：我愛熊熊</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="50.5333" data-lng="5.5667" data-region="比利時">
+            <img src="LINE_ALBUM_名信片_260520_102.jpg" alt="Esneux Chateau Le Fy" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Esneux Chateau Le Fy</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 比利時</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 凱西妹紙" data-lat="25.053461367523294" data-lng="121.60852821558862" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_103.jpg" alt="Leiksvæði Barna" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Leiksvæði Barna</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：凱西妹紙</span>
+            </div>
+        </div>
+        <div class="card item 尼羅河女兒" data-lat="24.9965" data-lng="121.5098" data-region="新北市">
+            <img src="LINE_ALBUM_名信片_260520_104.jpg" alt="景平路170噴水池" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">景平路170噴水池</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：尼羅河女兒</span>
+            </div>
+        </div>
+        <div class="card item Markblue" data-lat="25.0112" data-lng="121.4617" data-region="新北市">
+            <img src="LINE_ALBUM_名信片_260520_105.jpg" alt="板橋北邑玄天宮" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">板橋北邑玄天宮</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Markblue</span>
+            </div>
+        </div>
+        <div class="card item ysn" data-lat="25.05219064778359" data-lng="121.60949290461335" data-region="台北市">
+            <img src="LINE_ALBUM_名信片_260520_106.jpg" alt="馬到成功" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">馬到成功</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
                 <span class="sender-tag"><span class="sender-icon">💌</span>來自：ysn</span>
             </div>
         </div>
-    </div>
+        <div class="card item Ritana" data-lat="25.0202789212742" data-lng="121.53370746599346" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_107.jpg" alt="洞" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">洞</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ritana</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.70759106490094" data-lng="120.96727247971972" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_108.jpg" alt="FOSSIL FUELS" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">FOSSIL FUELS</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 內門有隻吉貓貓" data-lat="25.073432200149277" data-lng="121.5969299335356" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_109.jpg" alt="桂影" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">桂影</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：內門有隻吉貓貓</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="36.22436469912475" data-lng="138.21329078307264" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_110.jpg" alt="久保ギャラリー暖炉" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">久保ギャラリー暖炉</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.069201111779222" data-lng="121.57047007990046" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_111.jpg" alt="小白上學去" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">小白上學去</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item Yiru" data-lat="24.2333" data-lng="120.56" data-region="台中市">
+            <img src="LINE_ALBUM_52026_260520_112.jpg" alt="福德正神祠" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">福德正神祠</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台中市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiru</span>
+            </div>
+        </div>
+        <div class="card item 梨" data-lat="25.0385" data-lng="121.5005" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_113.jpg" alt="艋舺教會" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">艋舺教會</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="42.8624" data-lng="140.7027" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_114.jpg" alt="MUSE NISEKO ウォールアート" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">MUSE NISEKO ウォールアート</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="61.85" data-lng="6.6167" data-region="挪威">
+            <img src="LINE_ALBUM_52026_260520_115.jpg" alt="Vagstad-kaia i Innvik sentrum" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Vagstad-kaia i Innvik sentrum</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 挪威</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 黃色電勞贖" data-lat="25.0538" data-lng="121.3789" data-region="桃園市">
+            <img src="LINE_ALBUM_52026_260520_116.jpg" alt="華亞園區-角柱藝術" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">華亞園區-角柱藝術</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 桃園市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：黃色電勞贖</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="43.4357" data-lng="144.0903" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_117.jpg" alt="阿寒国立公園　阿寒湖" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">阿寒国立公園　阿寒湖</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.016231532404642" data-lng="121.54546925933079" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_118.jpg" alt="人行道磁磚藝術" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">人行道磁磚藝術</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="35.5333" data-lng="138.7167" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_119.jpg" alt="新道峠第一展望台" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">新道峠第一展望台</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.036340353835076" data-lng="121.59388937123362" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_120.jpg" alt="空海金剛明王如來" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">空海金剛明王如來</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item 尼羅河女兒" data-lat="25.022825486822285" data-lng="121.55314086085053" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_121.jpg" alt="可愛壁畫貓頭鷹" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">可愛壁畫貓頭鷹</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：尼羅河女兒</span>
+            </div>
+        </div>
+        <div class="card item mullova" data-lat="24.996002077193985" data-lng="121.57424481294346" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_122.jpg" alt="廟會彩繪" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">廟會彩繪</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：mullova</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="31.8043" data-lng="131.4746" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_123.jpg" alt="青島神社・社号標" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">青島神社・社号標</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.05453209193464" data-lng="121.58850423160327" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_124.jpg" alt="內斂" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">內斂</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 黃色電勞贖" data-lat="25.051235631424152" data-lng="121.51994342718454" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_125.jpg" alt="遠雄建築人文館" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">遠雄建築人文館</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：黃色電勞贖</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.70764854907877" data-lng="120.95186630049027" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_126.jpg" alt="Sage Lodge" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Sage Lodge</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 梨" data-lat="22.9717" data-lng="121.3005" data-region="台東縣">
+            <img src="LINE_ALBUM_52026_260520_127.jpg" alt="東河包子" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">東河包子</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台東縣</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：梨</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.669362624890763" data-lng="120.95599155327245" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_128.jpg" alt="Kapelle Unterboden" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Kapelle Unterboden</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.68260731863218" data-lng="120.98608338034148" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_129.jpg" alt="Whats Kraken?" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Whats Kraken?</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="63.4167" data-lng="-19.0167" data-region="冰島">
+            <img src="LINE_ALBUM_52026_260520_130.jpg" alt="Víkurkirkja" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Víkurkirkja</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 冰島</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.696977156207048" data-lng="120.9784010584904" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_131.jpg" alt="Gothic Temple" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Gothic Temple</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Anna佳" data-lat="25.044069803842234" data-lng="121.54325823884113" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_132.jpg" alt="鐵馬頑童" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">鐵馬頑童</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Anna佳</span>
+            </div>
+        </div>
+        <div class="card item 鬼鬼" data-lat="25.048004646843864" data-lng="121.5434877983694" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_133.jpg" alt="本原藝術彩繪" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">本原藝術彩繪</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：鬼鬼</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="25.056177495429345" data-lng="121.52460634225841" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_134.jpg" alt="捷米向你說哈囉" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">捷米向你說哈囉</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item OOO" data-lat="25.033794575798712" data-lng="121.545562037535" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_135.jpg" alt="鞋" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">鞋</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：OOO</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.67678447050685" data-lng="120.94039730008949" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_136.jpg" alt="Spooky" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Spooky</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="48.8566" data-lng="2.3522" data-region="法國">
+            <img src="LINE_ALBUM_52026_260520_137.jpg" alt="Le Baiser" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Le Baiser</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 法國</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 黃色電勞贖" data-lat="25.1362" data-lng="121.8242" data-region="新北市">
+            <img src="LINE_ALBUM_52026_260520_138.jpg" alt="象鼻岩" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">象鼻岩</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：黃色電勞贖</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="25.05663265505081" data-lng="121.51820212014935" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_139.jpg" alt="Heiður og ættjörð" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Heiður og ættjörð</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item Ritana" data-lat="23.71317755476882" data-lng="120.99749716817367" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_140.jpg" alt="Skating Hockey Field" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Skating Hockey Field</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Ritana</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.682281069987237" data-lng="120.98374319734648" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_141.jpg" alt="Borradori Garage" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Borradori Garage</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.70879876946384" data-lng="120.9734536092197" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_142.jpg" alt="Ocean Mural" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Ocean Mural</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.06842516483559" data-lng="121.61311030882858" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_143.jpg" alt="羅馬廣場" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">羅馬廣場</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="64.47304648897978" data-lng="-18.343546592005886" data-region="冰島">
+            <img src="LINE_ALBUM_52026_260520_144.jpg" alt="Róló Borgarhverfi" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Róló Borgarhverfi</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 冰島</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="23.730453558084665" data-lng="120.92159627884865" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_145.jpg" alt="Playground of Keenes Pointe" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Playground of Keenes Pointe</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item mullova" data-lat="25.02604197037657" data-lng="121.59996842349689" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_146.jpg" alt="リス" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">リス</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：mullova</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="36.309" data-lng="138.9836" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_147.jpg" alt="高崎白衣大観音" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">高崎白衣大観音</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Yo" data-lat="25.032890734999917" data-lng="121.59117898384248" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_148.jpg" alt="台灣國家公園造景" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">台灣國家公園造景</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yo</span>
+            </div>
+        </div>
+        <div class="card item Yiwenの柴日記" data-lat="25.057032659627097" data-lng="121.54572513061487" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_149.jpg" alt="風和日麗" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">風和日麗</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
+            </div>
+        </div>
+        <div class="card item TING示斤" data-lat="25.080432189574438" data-lng="121.52175910781474" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_150.jpg" alt="海の神カジャケ平石神" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">海の神カジャケ平石神</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：TING-示斤</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="64.3127" data-lng="-22.3007" data-region="冰島">
+            <img src="LINE_ALBUM_52026_260520_151.jpg" alt="Strokkur" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Strokkur</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 冰島</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="25.016233231669776" data-lng="121.56755395551517" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_152.jpg" alt="酒牆" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">酒牆</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.003676238638736" data-lng="121.53058430533586" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_153.jpg" alt="Hinata Hyūga" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Hinata Hyūga</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 酸溜溜" data-lat="37.9838" data-lng="23.7275" data-region="希臘">
+            <img src="LINE_ALBUM_52026_260520_154.jpg" alt="Ροζ εκκλησία" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Ροζ εκκλησία</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 希臘</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：酸溜溜</span>
+            </div>
+        </div>
+        <div class="card item 尼羅河女兒" data-lat="24.996017189704176" data-lng="121.57707602084903" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_155.jpg" alt="出力館健身中心" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">出力館健身中心</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：尼羅河女兒</span>
+            </div>
+        </div>
+        <div class="card item Yiwenの柴日記" data-lat="25.050607375156577" data-lng="121.58477893702269" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_156.jpg" alt="牆壁彩繪" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">牆壁彩繪</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.06178834080655" data-lng="121.54152270741731" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_157.jpg" alt="茶花造型科技藝術" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">茶花造型科技藝術</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item rusagiYYZ" data-lat="23.68644406187339" data-lng="120.91244320111886" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_158.jpg" alt="Don't Get Carried Away Mural" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Don't Get Carried Away Mural</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：rusagiYYZ</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="33.9022" data-lng="130.8174" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_159.jpg" alt="若戸大橋" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">若戸大橋</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="33.6429" data-lng="130.1979" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_160.jpg" alt="二見ヶ浦・夫婦岩の鳥居" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">二見ヶ浦・夫婦岩の鳥居</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item NeoXaser" data-lat="24.988848696536717" data-lng="121.57935087923538" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_161.jpg" alt="鯨魚壁畫" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">鯨魚壁畫</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：NeoXaser</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="23.70856179201497" data-lng="120.98323422785207" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_162.jpg" alt="Cross Finger Chief" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Cross Finger Chief</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="35.4057" data-lng="138.5833" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_163.jpg" alt="朝霧高原にある富士山ViewPoint" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">朝霧高原にある富士山ViewPoint</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 皮卡丘" data-lat="29.9722" data-lng="31.1283" data-region="埃及">
+            <img src="LINE_ALBUM_52026_260520_164.jpg" alt="Pyramid of Menkaure" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Pyramid of Menkaure</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 埃及</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮卡丘</span>
+            </div>
+        </div>
+        <div class="card item ming856" data-lat="22.6698" data-lng="120.3023" data-region="高雄市">
+            <img src="LINE_ALBUM_52026_260520_165.jpg" alt="遊戲達人 Nintendo Switch專賣店 漢神巨蛋" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">遊戲達人 Nintendo Switch專賣店 漢神巨蛋</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 高雄市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：ming856</span>
+            </div>
+        </div>
+        <div class="card item Monoko" data-lat="45.4727" data-lng="9.1793" data-region="義大利">
+            <img src="LINE_ALBUM_52026_260520_166.jpg" alt="Acquario Civico di Milano" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Acquario Civico di Milano</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 義大利</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Monoko</span>
+            </div>
+        </div>
+        <div class="card item 凱西妹紙" data-lat="23.5936" data-lng="120.4682" data-region="嘉義縣">
+            <img src="LINE_ALBUM_52026_260520_167.jpg" alt="佐登妮絲城堡" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">佐登妮絲城堡</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 嘉義縣</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：凱西妹紙</span>
+            </div>
+        </div>
+        <div class="card item 夏夕夏景" data-lat="25.0694" data-lng="121.4423" data-region="新北市">
+            <img src="LINE_ALBUM_52026_260520_168.jpg" alt="水碓路向日葵藝術壁貼" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">水碓路向日葵藝術壁貼</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 新北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：夏夕夏景</span>
+            </div>
+        </div>
+        <div class="card item lulala" data-lat="25.07373608404998" data-lng="121.52385948018551" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_169.jpg" alt="樹壁畫" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">樹壁畫</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：lulala</span>
+            </div>
+        </div>
+        <div class="card item RPON" data-lat="25.03070845029355" data-lng="121.60554791062759" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_170.jpg" alt="素還真" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">素還真</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：RPON</span>
+            </div>
+        </div>
+        <div class="card item 尼羅河女兒" data-lat="25.012125004063307" data-lng="121.53450464920968" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_171.jpg" alt="公園彩繪倉庫" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">公園彩繪倉庫</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：尼羅河女兒</span>
+            </div>
+        </div>
+        <div class="card item Yiwenの柴日記" data-lat="34.1833" data-lng="134.05" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_172.jpg" alt="ホテル セカンドステージ案内板" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">ホテル セカンドステージ案内板</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Yiwenの柴日記</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="44.7866" data-lng="20.4489" data-region="塞爾維亞">
+            <img src="LINE_ALBUM_52026_260520_173.jpg" alt="Rimokatolička crkva" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Rimokatolička crkva</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 塞爾維亞</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Elisagarden" data-lat="20.0" data-lng="-100.0" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_174.jpg" alt="Convento Carmelitas Descalzas" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Convento Carmelitas Descalzas</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Elisa garden</span>
+            </div>
+        </div>
+        <div class="card item mko0mk" data-lat="23.670872836080793" data-lng="120.96862978751659" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_175.jpg" alt="Monarch Equipment Box" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Monarch Equipment Box</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：mko0mk</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="-40.9833" data-lng="174.95" data-region="紐西蘭">
+            <img src="LINE_ALBUM_52026_260520_176.jpg" alt="Paekakariki Beach Access" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Paekakariki Beach Access</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 紐西蘭</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item Zhx" data-lat="25.08260639307269" data-lng="121.53750860835434" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_177.jpg" alt="銀豆芽" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">銀豆芽</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Zhx</span>
+            </div>
+        </div>
+        <div class="card item Jessy" data-lat="25.0339" data-lng="121.5644" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_178.jpg" alt="裝置藝術 @ 台北101" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">裝置藝術 @ 台北101</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：Jessy</span>
+            </div>
+        </div>
+        <div class="card item 凱西妹紙" data-lat="48.8738" data-lng="2.3323" data-region="法國">
+            <img src="LINE_ALBUM_52026_260520_179.jpg" alt="Galeries Lafayette" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Galeries Lafayette</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 法國</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：凱西妹紙</span>
+            </div>
+        </div>
+        <div class="card item 阿呆呆" data-lat="25.04468926012728" data-lng="121.58842354802998" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_180.jpg" alt="兒一公園溜滑梯" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">兒一公園溜滑梯</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：阿呆呆</span>
+            </div>
+        </div>
+        <div class="card item mullova" data-lat="23.6777084897118" data-lng="120.95884728331276" data-region="其他">
+            <img src="LINE_ALBUM_52026_260520_181.jpg" alt="Blue Fishing Boat" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">Blue Fishing Boat</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 其他</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：mullova</span>
+            </div>
+        </div>
+        <div class="card item 皮克敏飼養中" data-lat="22.9839" data-lng="120.2075" data-region="台南市">
+            <img src="LINE_ALBUM_52026_260520_182.jpg" alt="台南大學 人魚娃娃" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">台南大學 人魚娃娃</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台南市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：皮克敏飼養中</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="43.4933" data-lng="142.6141" data-region="日本">
+            <img src="LINE_ALBUM_52026_260520_183.jpg" alt="青い池" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">青い池</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 日本</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+        <div class="card item 猴莎蕾" data-lat="25.051596913174894" data-lng="121.57092992304405" data-region="台北市">
+            <img src="LINE_ALBUM_52026_260520_184.jpg" alt="續-藝術造景" class="gallery-img" onclick="openLightbox(this.src)">
+            <div class="card-info">
+                <h3 class="card-title">續-藝術造景</h3>
+                <div style="font-size: 0.8rem; color: #777; margin-bottom: 8px;">📍 台北市</div>
+                <span class="sender-tag"><span class="sender-icon">💌</span>來自：猴莎蕾</span>
+            </div>
+        </div>
+</div>
 
-    <script>
-        var map = L.map('map').setView([25.0375, 121.5300], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+</div><!-- /wrap -->
 
-        var markers = [];
-        var featureGroup = L.featureGroup().addTo(map);
-        var cards = document.getElementsByClassName("item");
-        
-        for (var i = 0; i < cards.length; i++) {
-            var card = cards[i];
-            var lat = card.getAttribute("data-lat");
-            var lng = card.getAttribute("data-lng");
-            
-            var senderTextElement = card.querySelector(".sender-tag");
-            var senderClass = senderTextElement ? senderTextElement.innerText.replace("💌", "").replace("來自：", "").trim() : "";
-            
-            if (lat && lng) {
-                var title = card.querySelector(".card-title").innerText;
-                var imgSrc = card.querySelector("img").src;
-                var senderHtml = card.querySelector(".sender-tag").innerHTML;
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()">
+    <span id="lightbox-close">&times;</span>
+    <img id="lightbox-img" src="">
+</div>
 
-                var popupContent = `
-                    <div style="text-align: center;">
-                        <img src="${imgSrc}" alt="${title}" style="width: 100px; height: auto; border-radius: 8px; margin-bottom: 5px; border: 2px solid #8bc34a;">
-                        <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #2d5a2d;">${title}</h3>
-                        <div class="sender-tag" style="display: inline-block; background-color: #fff3e0; color: #e65100; padding: 4px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: bold;">${senderHtml}</div>
-                    </div>
-                `;
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── Map ──────────────────────────────────────────────────────────────
+var map = L.map('map').setView([25.04, 121.53], 7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:19, attribution:'© OpenStreetMap contributors'
+}).addTo(map);
 
-                var marker = L.marker([lat, lng]).bindPopup(popupContent);
-                marker.senderClass = senderClass;
-                marker.cardElement = card;
-                
-                markers.push(marker);
-                featureGroup.addLayer(marker);
+var markers = [];
+var fg = L.featureGroup().addTo(map);
+var cards = document.getElementsByClassName('item');
 
-                (function(m, c) {
-                    c.addEventListener('click', function() {
-                        map.flyTo(m.getLatLng(), 15);
-                        m.openPopup();
-                        document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
-                    });
-                })(marker, card);
-            }
+for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var lat = parseFloat(card.dataset.lat);
+    var lng = parseFloat(card.dataset.lng);
+    if (!isNaN(lat) && !isNaN(lng)) {
+        var title = card.querySelector('.card-title').innerText;
+        var imgSrc = card.querySelector('img').src;
+        var senderHtml = card.querySelector('.sender-tag').innerHTML;
+        var popup = '<div style="text-align:center;font-family:Inter,sans-serif;min-width:140px">'
+            + '<img src="' + imgSrc + '" style="width:120px;border-radius:10px;margin-bottom:8px;cursor:pointer" onclick="openLightbox(this.src)">'
+            + '<div style="font-weight:700;font-size:.9rem;margin-bottom:6px">' + title + '</div>'
+            + '<div style="background:#edf7ed;color:#2e7d32;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:600;display:inline-block">' + senderHtml + '</div>'
+            + '</div>';
+        var m = L.marker([lat, lng]).bindPopup(popup);
+        m.cardEl = card;
+        markers.push(m);
+        fg.addLayer(m);
+        (function(mk, c) {
+            c.addEventListener('click', function() {
+                map.flyTo(mk.getLatLng(), 15, {duration:1});
+                setTimeout(function(){ mk.openPopup(); }, 300);
+                document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'});
+            });
+        })(m, card);
+    }
+}
+if (markers.length) map.fitBounds(fg.getBounds(), {padding:[40,40],maxZoom:13});
+
+// ── Filter State ──────────────────────────────────────────────────────
+window.currentRegion = 'all';
+window.currentSender = 'all';
+
+window.applyFilters = function() {
+    for (var i = 0; i < cards.length; i++) {
+        var c = cards[i];
+        var sTag = c.querySelector('.sender-tag');
+        var sName = sTag ? sTag.innerText.replace('💌','').replace('來自：','').trim() : '';
+        var reg = c.dataset.region;
+        var show = (window.currentSender === 'all' || sName.indexOf(window.currentSender) > -1)
+                && (window.currentRegion === 'all' || reg === window.currentRegion);
+        c.style.display = show ? '' : 'none';
+    }
+    fg.clearLayers();
+    for (var j = 0; j < markers.length; j++) {
+        var m = markers[j];
+        var reg = m.cardEl.dataset.region;
+        var sTag2 = m.cardEl.querySelector('.sender-tag');
+        var sName2 = sTag2 ? sTag2.innerText.replace('💌','').replace('來自：','').trim() : '';
+        var show2 = (window.currentSender === 'all' || sName2.indexOf(window.currentSender) > -1)
+                 && (window.currentRegion === 'all' || reg === window.currentRegion);
+        if (show2) fg.addLayer(m);
+    }
+    if (fg.getLayers().length) map.fitBounds(fg.getBounds(), {padding:[40,40],maxZoom:13});
+    // Update active button highlight
+    var allBtns = document.querySelectorAll('.filter-btn');
+    allBtns.forEach(function(btn) {
+        btn.classList.remove('active');
+        var txt = btn.innerText;
+        if (btn.classList.contains('region-btn')) {
+            if (window.currentRegion === 'all' && txt.includes('全部地區')) btn.classList.add('active');
+            else if (window.currentRegion !== 'all' && txt.includes(window.currentRegion)) btn.classList.add('active');
+        } else if (btn.classList.contains('sender-btn')) {
+            if (window.currentSender === 'all' && txt.includes('全部顯示')) btn.classList.add('active');
+            else if (window.currentSender !== 'all' && txt.includes(window.currentSender)) btn.classList.add('active');
         }
+    });
+};
 
-        if (markers.length > 0) {
-            map.fitBounds(featureGroup.getBounds(), { padding: [30, 30] });
-        }
+window.filterRegion = function(r) {
+    window.currentRegion = r;
+    var btn = document.querySelector('.region-btn.active') || document.querySelector('[onclick*="' + r + '"]');
+    document.getElementById('regionPrev').textContent = (r === 'all') ? '全部地區' : r;
+    window.applyFilters();
+};
 
-        // 雙重篩選功能 (地區 + 寄件人)
-        window.currentRegion = "all";
-        window.currentSender = "all";
+window.filterSelection = function(c) {
+    window.currentSender = c || 'all';
+    document.getElementById('senderPrev').textContent = (c === 'all' || !c) ? '全部顯示' : ('💌 ' + c);
+    window.applyFilters();
+};
 
-        window.applyFilters = function() {
-            var x = document.getElementsByClassName("item");
-            
-            for (var i = 0; i < x.length; i++) {
-                var senderTextElement = x[i].querySelector(".sender-tag");
-                var senderName = senderTextElement ? senderTextElement.innerText.replace("💌", "").replace("來自：", "").trim() : "";
-                var region = x[i].getAttribute("data-region");
-                
-                var matchSender = (window.currentSender === "all" || senderName.indexOf(window.currentSender) > -1);
-                var matchRegion = (window.currentRegion === "all" || region === window.currentRegion);
-                
-                if (matchSender && matchRegion) {
-                    x[i].style.display = "block";
-                } else {
-                    x[i].style.display = "none";
-                }
-            }
-            
-            featureGroup.clearLayers();
-            for (var i = 0; i < markers.length; i++) {
-                var m = markers[i];
-                var region = m.cardElement.getAttribute("data-region");
-                var matchSender = (window.currentSender === "all" || m.senderClass.indexOf(window.currentSender) > -1);
-                var matchRegion = (window.currentRegion === "all" || region === window.currentRegion);
-                
-                if (matchSender && matchRegion) {
-                    featureGroup.addLayer(m);
-                }
-            }
-            
-            if (featureGroup.getLayers().length > 0) {
-                map.fitBounds(featureGroup.getBounds(), { padding: [30, 30] });
-            }
-            
-            var allBtns = document.getElementsByClassName("filter-btn");
-            for (var j = 0; j < allBtns.length; j++) {
-                allBtns[j].classList.remove("active");
-                var text = allBtns[j].innerText;
-                
-                if (allBtns[j].classList.contains("region-btn")) {
-                    if (window.currentRegion === "all" && text.includes("全部地區")) allBtns[j].classList.add("active");
-                    else if (window.currentRegion !== "all" && text.includes(window.currentRegion)) allBtns[j].classList.add("active");
-                } else {
-                    if (window.currentSender === "all" && text.includes("全部顯示")) allBtns[j].classList.add("active");
-                    else if (window.currentSender !== "all" && text.includes(window.currentSender)) allBtns[j].classList.add("active");
-                }
-            }
-        };
+// ── Accordion ─────────────────────────────────────────────────────────
+window.toggleAcc = function(id) {
+    document.getElementById(id).classList.toggle('open');
+};
 
-        window.filterSelection = function(c) {
-            if (c === "") c = "all";
-            window.currentSender = c;
-            window.applyFilters();
-        };
-        
-        window.filterRegion = function(r) {
-            window.currentRegion = r;
-            window.applyFilters();
-        };
-    </script>
+// ── Lightbox ──────────────────────────────────────────────────────────
+window.openLightbox = function(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('active');
+    event && event.stopPropagation && event.stopPropagation();
+};
+window.closeLightbox = function() {
+    document.getElementById('lightbox').classList.remove('active');
+};
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') window.closeLightbox();
+});
+</script>
 </body>
 </html>

@@ -180,13 +180,13 @@ const postcards = [
         "category": "其他"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "zzz",
         "filename": "LINE_ALBUM_52226_260526_114.jpg",
         "title": "長廊燈飾",
         "location_html": "📍 基隆市",
         "subtitle": "興雅里 信義區",
-        "category": "其他"
+        "category": "街景"
     },
     {
         "region": "嘉義市",
@@ -477,13 +477,13 @@ const postcards = [
         "category": "街景"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "猴莎蕾",
         "filename": "LINE_ALBUM_52226_260526_144.jpg",
         "title": "貓咪伸懶腰",
         "location_html": "📍 基隆市",
         "subtitle": "黎忠里_信義區",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "其他",
@@ -801,13 +801,13 @@ const postcards = [
         "category": "其他"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "ysn",
         "filename": "LINE_ALBUM_52226_260526_177.jpg",
         "title": "北醫慈母",
         "location_html": "📍 基隆市",
         "subtitle": "雙和里 信義區",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "新北市",
@@ -1125,13 +1125,13 @@ const postcards = [
         "category": "其他"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "猴莎蕾",
         "filename": "LINE_ALBUM_52226_260526_23.jpg",
         "title": "演奏者",
         "location_html": "📍 基隆市",
         "subtitle": "興雅里 信義區",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "高雄市",
@@ -1287,13 +1287,13 @@ const postcards = [
         "category": "觀光區"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "liiiiiiiirs",
         "filename": "LINE_ALBUM_52226_260526_4.jpg",
         "title": "石頭貓",
         "location_html": "📍 基隆市",
         "subtitle": "孝忠里 信義區",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "其他",
@@ -1539,13 +1539,13 @@ const postcards = [
         "category": "其他"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "zzz",
         "filename": "LINE_ALBUM_52226_260526_65.jpg",
         "title": "晶饌鯉魚外牆裝飾",
         "location_html": "📍 基隆市",
         "subtitle": "大道里 信義區",
-        "category": "街景"
+        "category": "裝置藝術"
     },
     {
         "region": "新北市",
@@ -2646,13 +2646,13 @@ const postcards = [
         "category": "其他"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "AMBER",
         "filename": "LINE_ALBUM_名信片2_260521_109.jpg",
         "title": "基隆彩繪巷",
         "location_html": "📍 基隆市",
         "subtitle": "",
-        "category": "街景"
+        "category": "其他"
     },
     {
         "region": "台北市",
@@ -3933,7 +3933,7 @@ const postcards = [
         "category": "裝置藝術"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "zzz",
         "filename": "LINE_ALBUM_名信片2_260521_238.jpg",
         "title": "瀑布山水畫",
@@ -7173,13 +7173,13 @@ const postcards = [
         "category": "步道"
     },
     {
-        "region": "基隆市",
+        "region": "台北市",
         "sender": "Jenny",
         "filename": "LINE_ALBUM_名信片_260520_93.jpg",
         "title": "基隆河右岸11.OKM",
         "location_html": "📍 台北市",
         "subtitle": "明勝里土林區",
-        "category": "其他"
+        "category": "街景"
     },
     {
         "region": "新北市",

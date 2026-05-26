@@ -4965,7 +4965,7 @@ const postcards = [
         "title": "綠0)木入]才才J工",
         "location_html": "🇯🇵 日本",
         "subtitle": "夷隅市 岬瀧 郵宁使 POST",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "其他",
@@ -5118,7 +5118,7 @@ const postcards = [
         "title": "Neuschwansfein",
         "location_html": "❓ 其他",
         "subtitle": "Panorama 霍恩施萬高 施萬高",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "其他",
@@ -5271,7 +5271,7 @@ const postcards = [
         "title": "Sugandafiroi",
         "location_html": "❓ 其他",
         "subtitle": "Verbto Staoardali Suoureyri",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "日本",
@@ -5280,7 +5280,7 @@ const postcards = [
         "title": "先宮",
         "location_html": "🇯🇵 日本",
         "subtitle": "長洲町示檗:",
-        "category": "其他"
+        "category": "神社/廟宇"
     },
     {
         "region": "紐西蘭",
@@ -5334,7 +5334,7 @@ const postcards = [
         "title": "Cave offhe Ancienfs",
         "location_html": "❓ 其他",
         "subtitle": "",
-        "category": "其他"
+        "category": "海岸"
     },
     {
         "region": "日本",
@@ -5370,7 +5370,7 @@ const postcards = [
         "title": "忍野^/-5)卜",
         "location_html": "🇯🇵 日本",
         "subtitle": "忍野村忍草",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "新北市",
@@ -5388,11 +5388,11 @@ const postcards = [
         "title": "Silfrasfaoakirkia",
         "location_html": "❓ 其他",
         "subtitle": "Varmahlio",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "其他",
-        "sender": "猴莎蕾",
+        "sender": "梨",
         "filename": "LINE_ALBUM_名信片2_260521_384.jpg",
         "title": "飛龍磐石",
         "location_html": "❓ 其他",
@@ -5532,7 +5532,7 @@ const postcards = [
         "title": "二匕17y又才山頂",
         "location_html": "🇯🇵 日本",
         "subtitle": "俱知安町",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "日本",
@@ -5550,7 +5550,7 @@ const postcards = [
         "title": "方出迎元J)^工廿人",
         "location_html": "🇯🇵 日本",
         "subtitle": "本部町 石川",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "其他",
@@ -5658,7 +5658,7 @@ const postcards = [
         "title": "Forgoffen Chapel",
         "location_html": "❓ 其他",
         "subtitle": "Dolni Vadiavov Vadavov U Brunfalu",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "其他",
@@ -5667,7 +5667,7 @@ const postcards = [
         "title": "SankiLuzia",
         "location_html": "❓ 其他",
         "subtitle": "Eschfeld Eschfeld",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "桃園市",
@@ -5712,7 +5712,7 @@ const postcards = [
         "title": "Crashed US Navy DC-3",
         "location_html": "🇮🇸 冰島",
         "subtitle": "Vik",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "新北市",
@@ -5748,7 +5748,7 @@ const postcards = [
         "title": "海左臨七月0才寸y工",
         "location_html": "❓ 其他",
         "subtitle": "北=",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "其他",
@@ -5784,7 +5784,7 @@ const postcards = [
         "title": "忠靈塔",
         "location_html": "🇯🇵 日本",
         "subtitle": "富士吉田市",
-        "category": "其他"
+        "category": "神社/廟宇"
     },
     {
         "region": "台北市",
@@ -5901,7 +5901,7 @@ const postcards = [
         "title": "Haifoss upplysingaskilfi",
         "location_html": "🇮🇸 冰島",
         "subtitle": "Selfoss",
-        "category": "其他"
+        "category": "瀑布"
     },
     {
         "region": "其他",
@@ -6126,7 +6126,7 @@ const postcards = [
         "title": "FTO4飛機",
         "location_html": "📍 高雄市",
         "subtitle": "過埤里鳳山區 4io",
-        "category": "其他"
+        "category": "裝置藝術"
     },
     {
         "region": "其他",
@@ -6324,7 +6324,7 @@ const postcards = [
         "title": "Esneux Chafeau Le Fy",
         "location_html": "❓ 其他",
         "subtitle": "埃斯訥",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "其他",
@@ -6378,7 +6378,7 @@ const postcards = [
         "title": "Hiking and skiing froil morker 出8",
         "location_html": "❓ 其他",
         "subtitle": "奧於厄爾 iceiiie",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "桃園市",
@@ -6612,7 +6612,7 @@ const postcards = [
         "title": "梧棲三玄宮",
         "location_html": "📍 台中市",
         "subtitle": "興農里 梧棲區",
-        "category": "其他"
+        "category": "神社/廟宇"
     },
     {
         "region": "台中市",
@@ -6621,7 +6621,7 @@ const postcards = [
         "title": "紫雲巖文化大樓",
         "location_html": "📍 台中市",
         "subtitle": "申興里清[ 1& 01=1",
-        "category": "建築/設施"
+        "category": "神社/廟宇"
     },
     {
         "region": "台中市",
@@ -6666,7 +6666,7 @@ const postcards = [
         "title": "國聖燈塔",
         "location_html": "📍 台南市",
         "subtitle": "十份里.七股區",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "台中市",
@@ -6684,7 +6684,7 @@ const postcards = [
         "title": "old Biafhlon Cabin",
         "location_html": "❓ 其他",
         "subtitle": "Otway喬治王子城",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "其他",
@@ -6693,7 +6693,7 @@ const postcards = [
         "title": "Ifakylan Nuorisoseura",
         "location_html": "❓ 其他",
         "subtitle": "Ifakyla",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "火影系列",
@@ -6765,7 +6765,7 @@ const postcards = [
         "title": "Gruvearbeideren",
         "location_html": "🇳🇴 挪威",
         "subtitle": "Folldol",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "其他",
@@ -6774,7 +6774,7 @@ const postcards = [
         "title": "Mafinloc Resorf",
         "location_html": "❓ 其他",
         "subtitle": "Bebeladan El Nido IBacuim",
-        "category": "其他"
+        "category": "海岸"
     },
     {
         "region": "紐西蘭",
@@ -6786,13 +6786,13 @@ const postcards = [
         "category": "步道"
     },
     {
-        "region": "其他",
+        "region": "冰島",
         "sender": "猴莎蕾",
         "filename": "LINE_ALBUM_名信片_260520_54.jpg",
         "title": "Velkomin Hil Vestmannaeyia 趾8",
         "location_html": "❓ 其他",
         "subtitle": "iolsvslur",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "台北市",
@@ -6855,16 +6855,16 @@ const postcards = [
         "title": "Fuenfe Gran Via-Pau Claris",
         "location_html": "❓ 其他",
         "subtitle": "Eixample巴塞隆納",
-        "category": "其他"
+        "category": "街景"
     },
     {
-        "region": "英國",
+        "region": "冰島",
         "sender": "猴莎蕾",
         "filename": "LINE_ALBUM_名信片_260520_61.jpg",
         "title": "chips",
         "location_html": "🇬🇧 英國",
         "subtitle": "fish and Mia's counfry van Hvolsvollur",
-        "category": "其他"
+        "category": "觀光區"
     },
     {
         "region": "其他",
@@ -6990,7 +6990,7 @@ const postcards = [
         "title": "Brtin",
         "location_html": "🇮🇸 冰島",
         "subtitle": "Selfoss",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "嘉義縣",
@@ -7053,7 +7053,7 @@ const postcards = [
         "title": "Infersecfed wifh Nafure",
         "location_html": "❓ 其他",
         "subtitle": "格林維爾",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "花蓮縣",
@@ -7098,7 +7098,7 @@ const postcards = [
         "title": "普濟堂",
         "location_html": "📍 桃園市",
         "subtitle": "",
-        "category": "其他"
+        "category": "神社/廟宇"
     },
     {
         "region": "香港",
@@ -7206,7 +7206,7 @@ const postcards = [
         "title": "Unknown",
         "location_html": "❓ 其他",
         "subtitle": "",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "花蓮縣",
@@ -7233,6 +7233,6 @@ const postcards = [
         "title": "KosciolMidholor rohaniolo",
         "location_html": "❓ 其他",
         "subtitle": "loe",
-        "category": "其他"
+        "category": "建築/設施"
     }
 ];

@@ -357,7 +357,7 @@ const postcards = [
         "title": "河合3札方L1庄場",
         "location_html": "🇯🇵 日本",
         "subtitle": "豐田市 渡刈町下河合",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "台中市",
@@ -1041,7 +1041,7 @@ const postcards = [
         "title": "口|口&quot;9| 蘭7|| @7|{9|17|8",
         "location_html": "❓ 其他",
         "subtitle": "",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "台南市",
@@ -1419,7 +1419,7 @@ const postcards = [
         "title": "Bonhomme quifraverse",
         "location_html": "❓ 其他",
         "subtitle": "Neuville-les- Dieppe迪耶普",
-        "category": "其他"
+        "category": "裝置藝術"
     },
     {
         "region": "其他",
@@ -2508,7 +2508,7 @@ const postcards = [
         "title": "兒一公園溜滑梯",
         "location_html": "📍 新北市",
         "subtitle": "小浦里.蘆洲區",
-        "category": "生態"
+        "category": "公共場所"
     },
     {
         "region": "其他",
@@ -2634,7 +2634,7 @@ const postcards = [
         "title": "台南市美術館2館",
         "location_html": "📍 台南市",
         "subtitle": "南美里中西區",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "高雄市",
@@ -2706,7 +2706,7 @@ const postcards = [
         "title": "靈台橋",
         "location_html": "🇯🇵 日本",
         "subtitle": "美里町 豊富",
-        "category": "建築/設施"
+        "category": "風景區"
     },
     {
         "region": "其他",
@@ -2922,7 +2922,7 @@ const postcards = [
         "title": "The Blue Cove",
         "location_html": "❓ 其他",
         "subtitle": "Bisevo",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "其他",
@@ -3093,7 +3093,7 @@ const postcards = [
         "title": "Kirby",
         "location_html": "❓ 其他",
         "subtitle": "Tumacacori 埃莫西約",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "其他",
@@ -3507,7 +3507,7 @@ const postcards = [
         "title": "Cafhedrale Nofre Dame d Amiens",
         "location_html": "🇫🇷 法國",
         "subtitle": "亞眠",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "其他",
@@ -3588,7 +3588,7 @@ const postcards = [
         "title": "5)二)少1-7400M地點",
         "location_html": "🇯🇵 日本",
         "subtitle": "出水市 A00`1 召娑",
-        "category": "其他"
+        "category": "街景"
     },
     {
         "region": "其他",
@@ -3741,7 +3741,7 @@ const postcards = [
         "title": "大神匕b少y休憩所",
         "location_html": "🇯🇵 日本",
         "subtitle": "yy力卜L少卜湘南平塚 平塚市大神8",
-        "category": "神社/廟宇"
+        "category": "公共場所"
     },
     {
         "region": "台北市",
@@ -4056,7 +4056,7 @@ const postcards = [
         "title": "春耕",
         "location_html": "📍 台北市",
         "subtitle": "[25.0887170, 121.4742950|",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "新北市",
@@ -4335,7 +4335,7 @@ const postcards = [
         "title": "Logo",
         "location_html": "📍 新北市",
         "subtitle": "NOU 保佑里蘆洲區",
-        "category": "其他"
+        "category": "裝置藝術"
     },
     {
         "region": "西班牙",
@@ -4434,7 +4434,7 @@ const postcards = [
         "title": "Smile",
         "location_html": "📍 台北市",
         "subtitle": "興雅里 信義區",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "台北市",
@@ -4452,7 +4452,7 @@ const postcards = [
         "title": "Madonna A.D.1937",
         "location_html": "❓ 其他",
         "subtitle": "[49:7797540,|9.9390330|",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "新北市",
@@ -4533,7 +4533,7 @@ const postcards = [
         "title": "玩風車的小孩",
         "location_html": "❓ 其他",
         "subtitle": "未園里申山區",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "日本",
@@ -4758,7 +4758,7 @@ const postcards = [
         "title": "iglecia penfecostes el poder de jesucristo",
         "location_html": "❓ 其他",
         "subtitle": "68$12$ %3}6 駝; 10 (14.66625 Ellomusiid0$ 011_ 0150*1;115 ~1 0 /*0 1*1( 1111 001",
-        "category": "其他"
+        "category": "街景"
     },
     {
         "region": "台北市",
@@ -4974,7 +4974,7 @@ const postcards = [
         "title": "Evangelische Kirche",
         "location_html": "❓ 其他",
         "subtitle": "巴特",
-        "category": "其他"
+        "category": "自然/風景"
     },
     {
         "region": "其他",
@@ -5046,7 +5046,7 @@ const postcards = [
         "title": "耋北轉運站 Taipei Bus Stafion",
         "location_html": "📍 台北市",
         "subtitle": "建明里大同區 6轉 3is",
-        "category": "其他"
+        "category": "公共場所"
     },
     {
         "region": "日本",
@@ -5208,7 +5208,7 @@ const postcards = [
         "title": "Wandgemalde",
         "location_html": "❓ 其他",
         "subtitle": "Frauenland 符茲堡",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "其他",
@@ -5316,7 +5316,7 @@ const postcards = [
         "title": "中華民國刑事警察 C.l.B.",
         "location_html": "📍 台北市",
         "subtitle": "新仁里 信義區 >",
-        "category": "其他"
+        "category": "雕像/地標"
     },
     {
         "region": "捷克",
@@ -5424,7 +5424,7 @@ const postcards = [
         "title": "SNOOPY玻璃牆",
         "location_html": "📍 台北市",
         "subtitle": "保安里大同區",
-        "category": "其他"
+        "category": "公共場所"
     },
     {
         "region": "其他",
@@ -5595,7 +5595,7 @@ const postcards = [
         "title": "The Last Supper",
         "location_html": "❓ 其他",
         "subtitle": "Sungai Kunjang 沙馬林達",
-        "category": "其他"
+        "category": "壁畫/藝術"
     },
     {
         "region": "其他",
@@ -5982,7 +5982,7 @@ const postcards = [
         "title": "Sv. Pefra Pavel",
         "location_html": "❓ 其他",
         "subtitle": "KostelecU Hermanova Mestce KostelecU Hermanova Mestce",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "新北市",

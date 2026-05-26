@@ -181,7 +181,7 @@ const postcards = [
     },
     {
         "region": "基隆市",
-        "sender": "猴莎蕾",
+        "sender": "zzz",
         "filename": "LINE_ALBUM_52226_260526_114.jpg",
         "title": "長廊燈飾",
         "location_html": "📍 基隆市",
@@ -1540,7 +1540,7 @@ const postcards = [
     },
     {
         "region": "基隆市",
-        "sender": "猴莎蕾",
+        "sender": "zzz",
         "filename": "LINE_ALBUM_52226_260526_65.jpg",
         "title": "晶饌鯉魚外牆裝飾",
         "location_html": "📍 基隆市",

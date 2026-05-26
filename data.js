@@ -2526,7 +2526,7 @@ const postcards = [
         "title": "台南大學人魚娃娃",
         "location_html": "📍 台南市",
         "subtitle": "郡王里中西區",
-        "category": "其他"
+        "category": "裝置藝術"
     },
     {
         "region": "日本",
@@ -3204,7 +3204,7 @@ const postcards = [
         "category": "其他"
     },
     {
-        "region": "其他",
+        "region": "新北市",
         "sender": "石原里美",
         "filename": "LINE_ALBUM_名信片2_260521_165.jpg",
         "title": "鐵門塗鴉",
@@ -3717,8 +3717,8 @@ const postcards = [
         "category": "其他"
     },
     {
-        "region": "其他",
-        "sender": "醚%太W嶇",
+        "region": "台南市",
+        "sender": "凱西妹妹",
         "filename": "LINE_ALBUM_名信片2_260521_216.jpg",
         "title": "多那之Caf壁畫",
         "location_html": "❓ 其他",
@@ -3777,7 +3777,7 @@ const postcards = [
         "title": "須賀川市民入術一少會館",
         "location_html": "🇯🇵 日本",
         "subtitle": "須賀川市曾根",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "其他",
@@ -3975,7 +3975,7 @@ const postcards = [
         "title": "巾LlL一儿那霸空港馭 Naha Airpor Stalion",
         "location_html": "🇯🇵 日本",
         "subtitle": "那霸市 鏡水",
-        "category": "其他"
+        "category": "公共場所"
     },
     {
         "region": "雲林縣",
@@ -3984,7 +3984,7 @@ const postcards = [
         "title": "斗六棒球場",
         "location_html": "📍 雲林縣",
         "subtitle": "a?中薹琉%捧球杏黜盟聯賽",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "台南市",
@@ -4137,7 +4137,7 @@ const postcards = [
         "title": "水瓶女神雕像",
         "location_html": "📍 台北市",
         "subtitle": "和安里 大安區",
-        "category": "神社/廟宇"
+        "category": "雕像/地標"
     },
     {
         "region": "新竹縣",
@@ -5307,7 +5307,7 @@ const postcards = [
         "title": "外星魚來了",
         "location_html": "📍 台北市",
         "subtitle": "興雅里 信義區",
-        "category": "其他"
+        "category": "裝置藝術"
     },
     {
         "region": "台北市",
@@ -6369,7 +6369,7 @@ const postcards = [
         "title": "u己豈虱荅皂^",
         "location_html": "❓ 其他",
         "subtitle": "丕7刈",
-        "category": "其他"
+        "category": "建築/設施"
     },
     {
         "region": "其他",

@@ -83,13 +83,6 @@
             </div>
             <div class="header-right">
                 <button class="btn-edit-mode" onclick="toggleEditMode()" id="editModeBtn">✏️ 啟用編輯模式</button>
-                <select id="sortSelect" class="sort-select" onchange="renderGallery()">
-                    <option value="default">↕️ 預設排序</option>
-                    <option value="region">🌍 依地區排序</option>
-                    <option value="sender">💌 依寄件人排序</option>
-                    <option value="category">🎨 依類型排序</option>
-                </select>
-                <div class="stats" id="stats-counter">共 0 張明信片</div>
             </div>
         </div>
         
@@ -297,6 +290,19 @@
                 <button class="btn" onclick="filterGallery('sender', '鬼鬼', this)">鬼鬼</button>
                 <button class="btn" onclick="filterGallery('sender', '하리보', this)">하리보</button>
                 <button class="btn" onclick="filterGallery('sender', '綜合', this)">綜合</button>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 0 10px;">
+            <div class="stats" id="stats-counter" style="font-size: 1.1rem;">共 0 張明信片</div>
+            <div>
+                <span style="font-weight: bold; margin-right: 10px; color: #555;">排序方式：</span>
+                <select id="sortSelect" class="sort-select" onchange="renderGallery()">
+                    <option value="default">↕️ 預設排序</option>
+                    <option value="region">🌍 依地區排序</option>
+                    <option value="sender">💌 依寄件人排序</option>
+                    <option value="category">🎨 依類型排序</option>
+                </select>
             </div>
         </div>
 
